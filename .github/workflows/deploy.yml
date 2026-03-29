@@ -9,6 +9,8 @@
 #   DEPLOY_PATH — (선택) 배포 디렉터리 절대 경로. 비우면 /home/<USERNAME>/<저장소이름>
 #
 # CI 는 .env 끝에 DOCKER_IMAGE_PREFIX(ghcr)·IMAGE_TAG(SHA) 를 덮어써 이번 빌드 이미지를 씁니다.
+#
+# 참고: job 수준 if 에서 secrets.* 를 쓰면 워크플로 검증 오류가 납니다(GitHub 제한).
 
 name: Build and deploy
 
@@ -69,9 +71,20 @@ jobs:
 
   deploy:
     needs: build-and-push
-    if: ${{ secrets.HOST != '' && secrets.USERNAME != '' && secrets.KEY != '' && secrets.ENV_VARS != '' }}
     runs-on: ubuntu-latest
     steps:
+      - name: 배포용 Secret 존재 확인
+        env:
+          H: ${{ secrets.HOST }}
+          U: ${{ secrets.USERNAME }}
+          K: ${{ secrets.KEY }}
+          E: ${{ secrets.ENV_VARS }}
+        run: |
+          if [ -z "$H" ] || [ -z "$U" ] || [ -z "$K" ] || [ -z "$E" ]; then
+            echo "::error::Repository Actions Secrets 에 HOST, USERNAME, KEY, ENV_VARS 를 모두 설정하세요."
+            exit 1
+          fi
+
       - name: 서버에 쓸 .env 파일 생성
         env:
           ENV_VARS: ${{ secrets.ENV_VARS }}
