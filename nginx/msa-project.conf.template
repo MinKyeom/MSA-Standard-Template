@@ -83,6 +83,25 @@ server {
         proxy_read_timeout 300s;
     }
 
+    # Next.js 동일 출처 프록시(백오피스) — /api/ 보다 긴 prefix 로 먼저 선언할 필요는 없음(가장 긴 매칭 우선)
+    location /api/gateway-proxy {
+        proxy_pass http://${UPSTREAM_FRONTEND};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    # 나머지 /api/* 는 게이트웨이 (/api/posts 등보다 짧은 prefix → 위쪽 전용 블록이 우선)
+    location /api/ {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://msa-gateway;
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
     location /actuator {
         proxy_http_version 1.1;
         proxy_set_header Connection "";
@@ -141,16 +160,77 @@ server {
         proxy_set_header Connection 'upgrade';
     }
 
-    location ~ ^/(auth|user|api|chat)/ {
+    location /user/ {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
         proxy_pass http://${DEV_UPSTREAM_GATEWAY};
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    location /auth/ {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://${DEV_UPSTREAM_GATEWAY};
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    location /api/posts {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://${DEV_UPSTREAM_GATEWAY};
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    location /api/post-drafts {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://${DEV_UPSTREAM_GATEWAY};
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    location /api/search {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://${DEV_UPSTREAM_GATEWAY};
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    location /api/gateway-proxy {
+        proxy_pass http://${DEV_UPSTREAM_FRONTEND};
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    location /api/ {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://${DEV_UPSTREAM_GATEWAY};
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
     }
 
     location /actuator {
         proxy_pass http://${DEV_UPSTREAM_GATEWAY};
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
         proxy_connect_timeout 10s;
         proxy_read_timeout 10s;
+    }
+
+    location /chat {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://${DEV_UPSTREAM_GATEWAY};
+        proxy_connect_timeout 600s;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
     }
 }

@@ -18,8 +18,12 @@ export default async function sitemap() {
   try {
     const res = await fetch(`${apiBase}/api/posts?page=0&size=500`, {
       next: { revalidate: 3600 },
-      headers: { "User-Agent": "MinKowskiM-Sitemap/1.0" },
+      headers: { "User-Agent": "MSA-Blog-Sitemap/1.0" },
     });
+    const ct = (res.headers.get("content-type") || "").toLowerCase();
+    if (!res.ok || !ct.includes("application/json")) {
+      throw new Error(`unexpected response ${res.status} ${ct}`);
+    }
     const data = await res.json();
     const content = data.content || [];
     postUrls = content.map((p) => ({
