@@ -1,12 +1,18 @@
 # push → GitHub Runner(클라우드)에서 docker compose build/push(GHCR) — 맥/PC 로컬 Docker 빌드와 별개
 #    로컬에서는 git push 만 하면 됨. 이미지는 Actions 가 매 커밋 SHA 태그로 새로 빌드·푸시합니다.
 #
+# 호스트 Nginx(nginx/msa-project.conf.template)는 Docker Compose 에 포함되지 않음.
+#    git pull 후 서버에서 ./scripts/render-nginx.sh → 설정 복사·nginx -t && sudo systemctl reload nginx
+#
 # Secrets (Repository → Settings → Secrets and variables → Actions):
 #   ENV_VARS   — 프로젝트 루트 .env 와 동일한 다줄 내용 (NEXT_PUBLIC_*, DOCKER_IMAGE_PREFIX, JWT 등)
 #   HOST       — 서버 호스트(IP/도메인)
 #   USERNAME   — SSH 사용자
 #   KEY        — SSH 개인 키(PEM 전체)
 #   DEPLOY_PATH — (선택) 배포 디렉터리 절대 경로. 비우면 /home/<USERNAME>/<저장소이름>
+#
+# Variables (같은 메뉴 → Variables) — 권장: PUBLIC_SITE_URL, PUBLIC_API_URL(https 오리진), (선택) PUBLIC_CHATBOT_URL
+#   PUBLIC_API_URL 이 https 이면 OAUTH2_REDIRECT_BASE·CORS_ALLOWED_ORIGINS 가 비었거나 localhost 면 자동 보정됩니다(scripts/merge-ci-env-overrides.sh).
 #
 # CI 는 .env 끝에 DOCKER_IMAGE_PREFIX(ghcr)·IMAGE_TAG(SHA) 를 덮어써 이번 빌드 이미지를 씁니다.
 #
@@ -65,6 +71,15 @@ jobs:
           # compose.yml 의 env_file: .env 때문에 push 시 루트 .env 가 필요함(러너에는 없음 → 동일 내용 복사)
           cp .env.build .env
 
+      - name: Variables로 NEXT_PUBLIC·OAuth·CORS 병합
+        env:
+          SITE: ${{ vars.PUBLIC_SITE_URL }}
+          API: ${{ vars.PUBLIC_API_URL }}
+          CHAT: ${{ vars.PUBLIC_CHATBOT_URL }}
+        run: |
+          bash scripts/merge-ci-env-overrides.sh .env.build
+          cp .env.build .env
+
       - name: Build & push
         env:
           DOCKER_BUILDKIT: "1"
@@ -77,6 +92,8 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v5
+
       - name: 배포용 Secret 존재 확인
         env:
           H: ${{ secrets.HOST }}
@@ -92,10 +109,14 @@ jobs:
       - name: 서버에 쓸 .env 파일 생성
         env:
           ENV_VARS: ${{ secrets.ENV_VARS }}
+          SITE: ${{ vars.PUBLIC_SITE_URL }}
+          API: ${{ vars.PUBLIC_API_URL }}
+          CHAT: ${{ vars.PUBLIC_CHATBOT_URL }}
         run: |
           printf '%s\n' "$ENV_VARS" > .env.deploy.tmp
           echo "DOCKER_IMAGE_PREFIX=${{ needs.build-and-push.outputs.image_prefix }}" >> .env.deploy.tmp
           echo "IMAGE_TAG=${{ github.sha }}" >> .env.deploy.tmp
+          bash scripts/merge-ci-env-overrides.sh .env.deploy.tmp
 
       - name: .env 서버로 복사
         uses: appleboy/scp-action@v0.1.7

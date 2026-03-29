@@ -1,6 +1,26 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os, json, traceback
+
+
+def _cors_allowed_origins():
+    """
+    게이트웨이와 동일한 CORS_ALLOWED_ORIGINS(.env, 쉼표 구분)를 사용.
+    미설정 시 로컬 개발 Origin 만 허용(운영은 반드시 .env 에 도메인 나열).
+    """
+    raw = (os.getenv("CORS_ALLOWED_ORIGINS") or "").strip()
+    out = [o.strip() for o in raw.split(",") if o.strip()]
+    for d in (
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:4000",
+        "http://127.0.0.1:4000",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ):
+        if d not in out:
+            out.append(d)
+    return out
 from langchain_groq import ChatGroq
 from langchain_core.prompts import PromptTemplate 
 from langchain_core.output_parsers import PydanticOutputParser 
@@ -14,15 +34,13 @@ from prompts.chat_prompts import GITHUB_INFO, AGENT_SYSTEM_TEMPLATE
 init_db()
 app = FastAPI()
 
-# CORS 설정
-origins = [
-    "https://minkowskim.com",
-    "https://www.minkowskim.com",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:8000",
-]
-app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_allowed_origins(),
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # 환경 변수 및 설정
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
