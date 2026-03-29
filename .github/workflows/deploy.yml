@@ -42,6 +42,11 @@ on:
           - partial
           - full
 
+# 동일 브랜치에서 push·수동 실행이 겹치면 GHCR 푸시·SSH 배포가 경쟁할 수 있음 → 같은 ref 는 한 번에 하나만 실행(나머지는 대기 큐).
+concurrency:
+  group: build-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   REGISTRY: ghcr.io
   # Node 20 액션 런타임 경고 완화 · 2026년 기본 전환 대비 (https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/)
