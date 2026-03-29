@@ -274,8 +274,35 @@ a:hover {
   font-size: 0.9em;
 }
 
-/* 코드 블록 (react-syntax-highlighter에 의해 스타일링됩니다. */
-/* 추가적인 전역 CSS는 필요하지 않습니다.) */
+/* 펜스 코드 블록 (MarkdownRenderer — Prism 의존 제거, CI Webpack 안정화) */
+.markdown-fenced {
+  margin: 1rem 0;
+  padding: 1rem 1.1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  background: var(--color-secondary, #1e1e1e);
+  border: 1px solid var(--color-border, #333);
+}
+.markdown-fenced code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.9em;
+  line-height: 1.5;
+  white-space: pre;
+  display: block;
+  color: var(--color-text-main, #e0e0e0);
+  background: transparent;
+  padding: 0;
+}
+.markdown-fenced[data-lang]::before {
+  content: attr(data-lang);
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.55;
+  margin-bottom: 0.5rem;
+  font-family: system-ui, sans-serif;
+}
 
 /* ---------------------------------------------------------------- */
 /* --- 8. 유틸리티 및 폼 공통 스타일 (글쓰기 페이지 포함) --- */

@@ -6,9 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-// 배럴 import(dist/.../prism)는 CI(Webpack)에서 module-not-found 가 날 수 있어 단일 테마만 직접 로드
-import darcula from 'react-syntax-highlighter/dist/cjs/styles/prism/darcula';
+// react-syntax-highlighter 는 GitHub Actions(Webpack) 빌드에서 module-not-found 가 간헐 발생 → 제거, CSS로 블록 스타일
 
 /** 목차 링크용 헤딩 id 생성 (TableOfContents와 동일 규칙) */
 function slugify(text) {
@@ -55,21 +53,20 @@ const MarkdownRenderer = ({ content }) => {
               return <code className="markdown-inline-code" {...props}>{children}</code>;
             }
             
-            // 3-2. 코드 블록: ```language (구문 강조 적용)
+            // 3-2. 펜스 코드 블록 (구문 색상 없음 · globals.css 의 .markdown-fenced 로 스타일)
+            const body = String(children).replace(/\n$/, '');
             return match ? (
-              <SyntaxHighlighter
-                {...props}
-                style={darcula} // ⭐ 다크 모드에 최적화된 테마 적용
-                language={match[1]} // 언어 설정
-                PreTag="div" // HTML 태그를 div로 변경하여 스타일 충돌 방지
-              >
-                {String(children).replace(/\n$/, '')}
-              </SyntaxHighlighter>
+              <pre className="markdown-fenced" data-lang={match[1]}>
+                <code className={className || undefined} {...props}>
+                  {body}
+                </code>
+              </pre>
             ) : (
-              // 언어가 지정되지 않은 코드 블록이거나 Prism 지원 외의 경우
-              <code className={className} {...props}>
-                {children}
-              </code>
+              <pre className="markdown-fenced markdown-fenced--plain">
+                <code className={className} {...props}>
+                  {children}
+                </code>
+              </pre>
             );
           },
         }}
