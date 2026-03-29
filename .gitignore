@@ -22,8 +22,8 @@ nginx/.env.nginx
 # ----- Docker Compose 로컬 전용(공식 관례: 덮어쓰기만) -----
 docker-compose.override.yml
 
-# ----- 운영·로컬 데이터( DB 볼륨, 업로드 등 ) -----
-data/
+# ----- 운영·로컬 데이터( DB 볼륨, 업로드 등 ) — 저장소 루트만 (src/data 등 소스 JSON 은 커밋) -----
+/data/
 
 # ----- 로그·임시 -----
 *.log
