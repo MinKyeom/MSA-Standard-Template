@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  transpilePackages: ['react-syntax-highlighter'],
   staticPageGenerationTimeout: 600,
   // API는 게이트웨이(기본 8085)로 직접 호출(src/config/apiBase.js). 서비스별 포트 직결 rewrite 는 쓰지 않음(게이트웨이·쿠키·CORS 일관).
   async headers() {

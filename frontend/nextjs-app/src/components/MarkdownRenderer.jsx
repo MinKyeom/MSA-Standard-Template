@@ -7,7 +7,8 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { darcula } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+// 배럴 import(dist/.../prism)는 CI(Webpack)에서 module-not-found 가 날 수 있어 단일 테마만 직접 로드
+import darcula from 'react-syntax-highlighter/dist/cjs/styles/prism/darcula';
 
 /** 목차 링크용 헤딩 id 생성 (TableOfContents와 동일 규칙) */
 function slugify(text) {
