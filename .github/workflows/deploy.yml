@@ -115,6 +115,8 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
           envs: REMOTE_DEPLOY_PATH
+          # 기본 10m — MSA 다중 이미지 pull+재기동은 자주 초과 → Run Command Timeout
+          command_timeout: 60m
           script_stop: true
           script: |
             set -euo pipefail
@@ -133,6 +135,5 @@ jobs:
             git pull --ff-only origin "${BRANCH}"
             export DOCKER_IMAGE_PREFIX="${{ needs.build-and-push.outputs.image_prefix }}"
             export IMAGE_TAG="${{ github.sha }}"
-            docker compose pull
-            # 레지스트리 최신 레이어 반영 + 컨테이너 재생성(옛 이미지/캐시에 묶인 인스턴스 방지)
+            # --pull always 로 레지스트리 최신 이미지 확보 + 강제 재생성(별도 pull 생략으로 이중 다운로드 방지)
             docker compose up -d --pull always --force-recreate --remove-orphans
