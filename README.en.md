@@ -236,7 +236,10 @@ See comments in `.env.example` for `GATEWAY_INTERNAL_URL`.
 ## CI/CD (GitHub Actions → GHCR → server)
 
 - Workflow: **`.github/workflows/deploy.yml`**
-- On push to **`main` / `master`**: build & push images to **GHCR** on GitHub-hosted runners, then SSH to sync `.env`, `git pull`, `docker compose pull`, `up`
+- On push to **`main` / `master`**: only **changed** app images are built; the rest are **retagged** on GHCR from the previous commit SHA to the new SHA (`scripts/ci-retag-unchanged-images.sh`). Changes to `docker-compose.yml` or `.github/workflows/*` trigger a **full** build of all eight images.
+- **paths-ignore:** pushes that touch only `**.md` (anywhere), `LICENSE`, or anything under `docs/**` **do not** run the workflow.
+- **Manual full rebuild:** Actions → **Build and deploy** → *Run workflow* → **build_mode = full**.
+- Job **timeout: 5 hours** (300 minutes); SSH deploy step **command_timeout: 300m**.
 - Secrets: `ENV_VARS`, `HOST`, `USERNAME`, `KEY`, optional `DEPLOY_PATH`
 
 **Images built on your laptop are not deployed automatically.** Deployment uses **cloud builds** triggered by **git push**.

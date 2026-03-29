@@ -239,7 +239,10 @@ npm ci && npm run dev
 ## CI/CD (GitHub Actions → GHCR → 서버)
 
 - 워크플로: **`.github/workflows/deploy.yml`**
-- `main` / `master` **push** 시: 러너에서 이미지 **빌드·푸시(GHCR)** → SSH로 서버에 `.env` 동기화 후 `git pull`, `docker compose pull`, `up`
+- `main` / `master` **push** 시: 변경된 **앱 이미지만** `docker compose build` (나머지 7개는 GHCR에서 **이전 커밋 SHA → 현재 SHA**로 메타만 복사·푸시, `scripts/ci-retag-unchanged-images.sh`). `docker-compose.yml`·`.github/workflows/*` 변경 시에는 **전부 빌드**.
+- **paths-ignore:** 저장소 전체 `**.md`·`LICENSE`·`docs/**` 만 바뀐 push 는 워크플로 **미실행**(시간 절약).
+- **수동 전체 빌드:** GitHub → Actions → **Build and deploy** → *Run workflow* → **build_mode = full** (8개 서비스 전부 빌드·푸시).
+- Job **timeout: 5시간**(300분), SSH 배포 단계 **command_timeout: 300m**.
 - Secrets: `ENV_VARS`, `HOST`, `USERNAME`, `KEY`, (선택) `DEPLOY_PATH`
 
 **로컬 맥에서 빌드한 이미지는 자동으로 서버에 가지 않습니다.** 배포는 **push로 트리거되는 클라우드 빌드**를 사용합니다.

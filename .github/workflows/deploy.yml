@@ -16,6 +16,10 @@
 #
 # CI 는 .env 끝에 DOCKER_IMAGE_PREFIX(ghcr)·IMAGE_TAG(SHA) 를 덮어써 이번 빌드 이미지를 씁니다.
 #
+# 선택적 빌드: 변경된 마이크로서비스·프론트만 compose build, 나머지는 이전 커밋 이미지를 GHCR 에서
+#   동일 SHA 태그로 retag(scripts/ci-retag-unchanged-images.sh). README 등만 바뀌면 워크플로 자체가 안 돕니다(paths-ignore).
+# 수동 전체 빌드: Actions → Build and deploy → Run workflow → build_mode = full
+#
 # 참고: job 수준 if 에서 secrets.* 를 쓰면 워크플로 검증 오류가 납니다(GitHub 제한).
 
 name: Build and deploy
@@ -23,7 +27,20 @@ name: Build and deploy
 on:
   push:
     branches: [main, master]
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - "docs/**"
   workflow_dispatch:
+    inputs:
+      build_mode:
+        description: "partial = 변경분만 빌드(기본), full = 앱 이미지 8개 전부 빌드"
+        type: choice
+        required: true
+        default: partial
+        options:
+          - partial
+          - full
 
 env:
   REGISTRY: ghcr.io
@@ -33,6 +50,7 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    timeout-minutes: 300
     permissions:
       contents: read
       packages: write
@@ -40,6 +58,8 @@ jobs:
       image_prefix: ${{ steps.meta.outputs.prefix }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: GHCR 이미지 프리픽스 (소문자)
         id: meta
@@ -80,17 +100,48 @@ jobs:
           bash scripts/merge-ci-env-overrides.sh .env.build
           cp .env.build .env
 
-      - name: Build & push
+      - name: 선택적 빌드 및 GHCR 푸시
         env:
           DOCKER_BUILDKIT: "1"
           COMPOSE_DOCKER_CLI_BUILD: "1"
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          INPUT_BUILD_MODE: ${{ inputs.build_mode }}
         run: |
-          docker compose --env-file .env.build build --parallel
-          docker compose --env-file .env.build push
+          set -euo pipefail
+          FULL_BUILD=false
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ "${INPUT_BUILD_MODE:-partial}" = "full" ]; then
+            FULL_BUILD=true
+          fi
+          export FULL_BUILD
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+              BEFORE=$(git rev-parse HEAD^)
+            else
+              BEFORE="0000000000000000000000000000000000000000"
+            fi
+          else
+            BEFORE="${{ github.event.before }}"
+          fi
+          AFTER="${{ github.sha }}"
+          PLAN=$(bash scripts/determine-docker-services-ci.sh "$BEFORE" "$AFTER")
+          echo "::notice:: Docker CI plan: ${PLAN} (FULL_BUILD=${FULL_BUILD})"
+          if [ "$FULL_BUILD" = "true" ] || [ "$PLAN" = "ALL" ]; then
+            docker compose --env-file .env.build build --parallel
+            docker compose --env-file .env.build push
+          elif [ "$PLAN" = "RETAG" ]; then
+            bash scripts/ci-retag-unchanged-images.sh .env.build "$BEFORE" "$AFTER"
+          else
+            read -r -a TOBUILD <<< "$PLAN"
+            docker compose --env-file .env.build build "${TOBUILD[@]}"
+            docker compose --env-file .env.build push "${TOBUILD[@]}"
+            bash scripts/ci-retag-unchanged-images.sh .env.build "$BEFORE" "$AFTER" "${TOBUILD[@]}"
+          fi
+          bash scripts/post-deploy-docker-prune.sh
 
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v5
 
@@ -136,8 +187,8 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
           envs: REMOTE_DEPLOY_PATH
-          # 기본 10m — MSA 다중 이미지 pull+재기동은 자주 초과 → Run Command Timeout
-          command_timeout: 60m
+          # 대용량 pull·재기동 대비 (job timeout 300m 와 별개)
+          command_timeout: 300m
           script_stop: true
           script: |
             set -euo pipefail
@@ -158,3 +209,4 @@ jobs:
             export IMAGE_TAG="${{ github.sha }}"
             # --pull always 로 레지스트리 최신 이미지 확보 + 강제 재생성(별도 pull 생략으로 이중 다운로드 방지)
             docker compose up -d --pull always --force-recreate --remove-orphans
+            bash scripts/post-deploy-docker-prune.sh
