@@ -62,6 +62,8 @@ jobs:
           printf '%s\n' "$ENV_VARS" > .env.build
           echo "DOCKER_IMAGE_PREFIX=${{ steps.meta.outputs.prefix }}" >> .env.build
           echo "IMAGE_TAG=${{ github.sha }}" >> .env.build
+          # compose.yml 의 env_file: .env 때문에 push 시 루트 .env 가 필요함(러너에는 없음 → 동일 내용 복사)
+          cp .env.build .env
 
       - name: Build & push
         env:
