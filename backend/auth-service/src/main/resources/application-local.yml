@@ -1,0 +1,65 @@
+server:
+  port: 8084
+  forward-headers-strategy: native
+  servlet:
+    context-path: /auth
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:authdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      acks: 0
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${OAUTH2_GOOGLE_CLIENT_ID:__oauth_disabled__}
+            client-secret: ${OAUTH2_GOOGLE_CLIENT_SECRET:__oauth_disabled__}
+            scope: openid,profile,email
+            redirect-uri: "http://localhost:8085/auth/login/oauth2/code/{registrationId}"
+          kakao:
+            client-id: ${OAUTH2_KAKAO_CLIENT_ID:__oauth_disabled__}
+            client-secret: ${OAUTH2_KAKAO_CLIENT_SECRET:__oauth_disabled__}
+            scope: openid,profile_nickname,account_email
+            client-name: Kakao
+            authorization-grant-type: authorization_code
+            redirect-uri: "http://localhost:8085/auth/login/oauth2/code/{registrationId}"
+            client-authentication-method: client_secret_post
+          github:
+            client-id: ${OAUTH2_GITHUB_CLIENT_ID:__oauth_disabled__}
+            client-secret: ${OAUTH2_GITHUB_CLIENT_SECRET:__oauth_disabled__}
+            scope: read:user,user:email
+            client-name: GitHub
+            authorization-grant-type: authorization_code
+            redirect-uri: "http://localhost:8085/auth/login/oauth2/code/{registrationId}"
+
+jwt:
+  secret: ${JWT_SECRET:dev-only-replace-with-strong-secret-in-production}
+  access-expiry-minutes: 30
+  refresh-expiry-days: 7
+  extend-grace-seconds: 60
+
+app:
+  cookie-domain: ""
+  frontend-url: http://localhost:3000
+  admin:
+    username: ${ADMIN_USERNAME:}
+    password: ${ADMIN_PASSWORD:}
+

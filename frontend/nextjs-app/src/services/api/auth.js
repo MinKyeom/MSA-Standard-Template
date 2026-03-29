@@ -1,0 +1,179 @@
+// src/services/api/auth.js
+import axios from "axios";
+import { authServiceBaseUrl } from "../../config/apiBase";
+
+const authAxios = axios.create({ withCredentials: true });
+authAxios.interceptors.request.use((config) => {
+  const b = authServiceBaseUrl();
+  if (b) config.baseURL = b;
+  return config;
+});
+
+// 401 시 로그아웃 콜백 (AuthProvider에서 세션 무효화용)
+let onUnauthorized = () => {};
+export const setOnUnauthorized = (fn) => {
+  onUnauthorized = fn;
+};
+
+authAxios.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      // 로그아웃 중(또는 로그아웃 직후)에는 refresh 재발급 경쟁조건을 막기 위해 refresh 시도를 스킵합니다.
+      if (typeof window !== "undefined") {
+        try {
+          if (sessionStorage.getItem("auth_logout")) {
+            onUnauthorized();
+            return Promise.reject(error);
+          }
+        } catch (_) {
+          // sessionStorage 접근 실패 시에는 원래 로직대로 진행
+        }
+      }
+
+      const originalRequest = error.config;
+      if (!originalRequest._retry) {
+        originalRequest._retry = true;
+        try {
+          await authAxios.post("/auth/refresh");
+          return authAxios(originalRequest);
+        } catch (refreshError) {
+          // 리프레시 실패 시 로그아웃 처리
+          onUnauthorized();
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("currentUserId");
+            localStorage.removeItem("currentUserNickname");
+          }
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+/**
+ * 브라우저 로컬 스토리지 정보를 바탕으로 로그인 여부를 즉시 판단
+ * API 요청 없이 동기적으로 상태를 반환합니다.
+ */
+export const getAuthUser = () => {
+  // SSR(Next.js 등) 환경 대응
+  if (typeof window === "undefined") {
+    return { isAuthenticated: false, id: null, nickname: null };
+  }
+
+  try {
+    const id = localStorage.getItem("currentUserId");
+    const nickname = localStorage.getItem("currentUserNickname");
+
+    // 두 정보가 모두 있어야 인증된 것으로 간주
+    return {
+      isAuthenticated: !!(id && nickname),
+      id,
+      nickname,
+    };
+  } catch (error) {
+    return { isAuthenticated: false, id: null, nickname: null };
+  }
+};
+
+/**
+ * 1. 로그인
+ */
+export const loginUser = async ({ username, password }) => {
+  const response = await authAxios.post("/auth/login", { username, password });
+  const { id, username: name } = response.data;
+  if (id) {
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("auth_logout");
+    }
+    localStorage.setItem("currentUserId", id);
+    localStorage.setItem("currentUserNickname", response.data.nickname ?? name ?? "");
+  }
+  return response.data;
+};
+
+/**
+ * 로그아웃 (서버 Redis 리프레시 토큰 삭제 + 쿠키 제거)
+ */
+export const logoutUser = async () => {
+  // 로그아웃 호출 직후 인터셉터 refresh 경쟁조건을 막기 위해 먼저 플래그를 세웁니다.
+  if (typeof window !== "undefined") {
+    sessionStorage.setItem("auth_logout", "1");
+  }
+  try {
+    await authAxios.post("/auth/logout");
+  } finally {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("currentUserId");
+      localStorage.removeItem("currentUserNickname");
+    }
+  }
+};
+
+/** 세션 연장 — 액세스 토큰 갱신(30분 연장). 만료 직전 호출 권장 */
+export const extendSession = async () => {
+  const res = await authAxios.post("/auth/extend");
+  return res.data;
+};
+
+/** 리프레시 토큰으로 새 액세스 토큰 발급 */
+export const refreshSession = async () => {
+  const res = await authAxios.post("/auth/refresh");
+  return res.data;
+};
+
+/** 현재 로그인 사용자 권한 정보 (id, username, role) — 관리자 여부 판단용 */
+export const fetchAuthMe = async () => {
+  const res = await authAxios.get("/auth/me");
+  return res.data;
+};
+
+/**
+ * 3. 이메일 인증번호 발송 요청
+ */
+export const sendVerificationCode = async (email) => {
+  return await authAxios.post("/auth/send-code", { email });
+};
+
+/**
+ * 4. 인증번호 확인 검증
+ */
+export const verifyCode = async (email, code) => {
+  const response = await authAxios.post("/auth/verify-code", { email, code });
+  return response.status === 200;
+  // return response.data; // 성공 시 200 OK
+};
+
+/**
+ * 5. 회원가입 (인증 서비스 단계의 가입 처리)
+ */
+export const registerAuth = async (userData) => {
+  const response = await authAxios.post("/auth/signup", userData);
+  return response.data;
+};
+
+/** 아이디 찾기: 이메일로 인증번호 발송 */
+export const sendFindUsernameCode = async (email) => {
+  const res = await authAxios.post("/auth/find-username/send", { email });
+  return res.data;
+};
+
+/** 아이디 찾기: 인증번호 확인 후 아이디 반환 */
+export const findUsernameVerify = async (email, code) => {
+  const res = await authAxios.post("/auth/find-username/verify", { email, code });
+  return res.data;
+};
+
+/** 비밀번호 찾기: 이메일로 인증번호 발송 */
+export const sendResetPasswordCode = async (email) => {
+  const res = await authAxios.post("/auth/reset-password/send", { email });
+  return res.data;
+};
+
+/** 비밀번호 찾기: 인증번호 + 새 비밀번호로 재설정 */
+export const resetPasswordVerify = async (email, code, newPassword) => {
+  const res = await authAxios.post("/auth/reset-password/verify", { email, code, newPassword });
+  return res.data;
+};
+
+export default authAxios;

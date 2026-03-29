@@ -1,0 +1,1 @@
+# 현재 워크플로 미사용. NEXT_PUBLIC_* 는 ENV_VARS(.env) 안에 넣을 것.

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500&amp;display=swap');
+    </style>
+  </defs>
+  <rect width="64" height="64" rx="10" fill="#ffffff"/>
+  <text
+    x="32"
+    y="44"
+    text-anchor="middle"
+    font-family="'Caveat', 'Segoe Script', 'Brush Script MT', cursive"
+    font-size="38"
+    font-weight="500"
+    fill="#1a1a1a"
+  >MK</text>
+</svg>

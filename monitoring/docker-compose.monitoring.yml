@@ -1,0 +1,69 @@
+# ============================================================
+# Loki Stack — Fluent Bit + Loki + Grafana (4GB 서버용)
+# [물리 분리 적용 시] Loki/Grafana는 observe.minkowskim.com(my-msa-project-monitoring)에서
+# 운영하며, 앱 서버에서는 메인 docker-compose.yml --profile monitoring 만 사용 (Fluent Bit만 원격 전송).
+# 로컬에서 전체 스택만 기동할 때:
+#   docker compose -f docker-compose.yml -f monitoring/docker-compose.monitoring.yml up -d
+# ============================================================
+
+version: "3.8"
+
+services:
+  fluent-bit:
+    image: fluent/fluent-bit:2.2
+    container_name: msa-fluent-bit
+    restart: unless-stopped
+    volumes:
+      - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
+      - ./fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/log:/var/log:ro
+    environment:
+      - FLB_LOG_LEVEL=info
+    mem_limit: 48m
+    depends_on:
+      - loki
+    networks:
+      - msa-network
+
+  loki:
+    image: grafana/loki:2.9.3
+    container_name: msa-loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/loki-config.yml
+      - loki-data:/loki
+    command: -config.file=/etc/loki/loki-config.yml
+    mem_limit: 256m
+    networks:
+      - msa-network
+
+  grafana:
+    image: grafana/grafana:10.2.3
+    container_name: msa-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=${GF_SERVER_ROOT_URL:-http://localhost:3001}
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      # Loki 데이터소스는 Grafana 10 기본 내장
+    volumes:
+      - grafana-data:/var/lib/grafana
+    mem_limit: 128m
+    depends_on:
+      - loki
+    networks:
+      - msa-network
+
+volumes:
+  loki-data:
+  grafana-data:
+
+networks:
+  msa-network:
+    external: true

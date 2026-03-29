@@ -1,0 +1,42 @@
+# Gateway 공통 설정 (dev/prod 프로파일에서 URI만 분리)
+server:
+  port: 8085
+
+# 쉼표로 구분. 운영: GitHub Secrets → 서버 .env 의 CORS_ALLOWED_ORIGINS
+gateway:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:4000,http://127.0.0.1:3000,http://127.0.0.1:4000}
+
+spring:
+  application:
+    name: api-gateway
+  codec:
+    max-in-memory-size: 50MB
+  cloud:
+    gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Access-Control-Allow-Methods Access-Control-Allow-Headers, RETAIN_FIRST
+      # CORS는 GatewayReactiveCorsConfiguration 의 CorsWebFilter 로만 적용 (도메인을 코드에 고정하지 않음)
+      globalcors:
+        enabled: false
+
+# JWT 검증에 사용 (Auth·User·Post·SMTP 와 동일 값 필수)
+jwt:
+  secret: ${JWT_SECRET:dev-only-replace-with-strong-secret-in-production}
+
+# Netty/Reactor 로그 완화 (Epoll/Datagram 스택 노이즈 감소)
+logging:
+  level:
+    root: ${LOGGING_LEVEL_ROOT:INFO}
+    io.netty: WARN
+    reactor.netty: WARN
+    org.springframework.cloud.gateway: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized

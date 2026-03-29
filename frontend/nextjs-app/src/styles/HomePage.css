@@ -1,0 +1,475 @@
+/* src/styles/HomePage.css (전면 개편: 감성적인 Hero 및 포스트 목록) */
+
+/* --- 메인 페이지 래퍼 (배경은 전체 화면 레이어에서) --- */
+.homepage-wrapper {
+  position: relative;
+  min-height: 100vh;
+}
+
+/* 배경은 layout의 GlobalBackground + globals.css의 .global-bg 사용 (전체 페이지 공통) */
+
+/* --- 메인 컨테이너 --- */
+.homepage-container {
+  position: relative;
+  z-index: 0;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding-left: max(clamp(12px, 4vw, 24px), env(safe-area-inset-left, 0px));
+  padding-right: max(clamp(12px, 4vw, 24px), env(safe-area-inset-right, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-sizing: border-box;
+  width: 100%;
+  text-align: left;
+}
+
+/* 다크 모드: 배경이 밤하늘이므로 섹션 제목·안내 문구 밝게 (가독성) */
+body.dark-mode .homepage-wrapper .latest-posts-section .section-title,
+body.dark-mode .homepage-wrapper .category-section .section-title {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+body.dark-mode .homepage-wrapper .no-posts {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* 라이트 모드: 낙엽 배경 위에서는 기본 텍스트 색 유지 (테마 변수) */
+.homepage-wrapper .latest-posts-section .section-title,
+.homepage-wrapper .category-section .section-title {
+  color: var(--color-text-main);
+}
+
+/* ---------------------------------------------------------------- */
+/* --- 1. 히어로 섹션 (감성적인 큰 타이포그래피 + 애니메이션) --- */
+/* ---------------------------------------------------------------- */
+.hero-section {
+  padding: 120px 40px;
+  margin-bottom: 60px;
+  background-color: var(--color-primary);
+  border-radius: 16px;
+  box-shadow: 0 15px 35px var(--color-shadow-strong);
+  border: 1px solid var(--color-border);
+  transition: all 0.3s;
+  text-align: center;
+  overflow: hidden;
+}
+
+/* --- Hero: Trim Paths 스타일 드로잉 (SVG Mask, 28s 루프) --- */
+/* 그리기 → 오래 유지 → 부드럽게 페이드 (반복감 줄이고 남아있는 느낌) */
+
+.hero-stroke-wrap {
+  display: block;
+  text-align: center;
+  margin-bottom: 25px;
+  font-family: var(--font-family-cursive), var(--font-caveat), Caveat, cursive;
+  font-weight: 400;
+}
+
+.hero-stroke-wrap.hero-subtitle {
+  margin-bottom: 30px;
+}
+
+.hero-stroke-svg {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: 80px;
+  overflow: visible;
+}
+
+.hero-subtitle .hero-stroke-svg {
+  max-height: 65px;
+}
+
+/* 마스크 선·면 레이어: 대기 중 0% 키프레임 적용(backwards), 잔상 없음 */
+.hero-mask-stroke,
+.hero-stroke-fill {
+  animation-fill-mode: backwards;
+}
+
+.hero-stroke-char-group {
+  animation-fill-mode: backwards;
+}
+
+/* 1. 선 그리기: 0~18% 그리기, 18~94% 오래 유지, 94~100% 부드럽게 페이드 */
+@keyframes heroStrokeDrawLoop {
+  0% {
+    stroke-dashoffset: var(--hero-len, 1000);
+    stroke-opacity: 0;
+  }
+  18% {
+    stroke-dashoffset: 0;
+    stroke-opacity: 1;
+  }
+  94% {
+    stroke-dashoffset: 0;
+    stroke-opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: var(--hero-len, 1000);
+    stroke-opacity: 0;
+  }
+}
+
+/* 짧은 점/획 전용: 메인과 동일한 얇은 붓(6px)으로 톡 찍히는 느낌 */
+@keyframes heroDotPressure {
+  0% {
+    stroke-width: 0;
+    stroke-opacity: 0;
+  }
+  20% {
+    stroke-width: 6px;
+    stroke-opacity: 0.85;
+  }
+  35% {
+    stroke-width: 6px;
+    stroke-opacity: 1;
+  }
+  80% {
+    stroke-width: 6px;
+    stroke-opacity: 1;
+  }
+  100% {
+    stroke-width: 0;
+    stroke-opacity: 0;
+  }
+}
+
+/* 2. 면 레이어: 94%까지 유지, 94~100% 부드럽게 Fade-out (남아있다가 자연스럽게 사라짐) */
+@keyframes heroFillOpacityLoop {
+  0%, 94% { opacity: 1; }
+  97% { opacity: 0.4; }
+  100% { opacity: 0; }
+}
+
+/* MinKowskiM — 더 작은 크기, elegant calligraphy */
+.hero-title {
+  font-family: var(--font-family-cursive) !important;
+  font-size: 2.75rem;
+  font-weight: 400;
+  color: var(--color-logo);
+  line-height: 1.1;
+  transition: color 0.3s;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  text-shadow: none;
+}
+
+.hero-title .hero-stroke-svg {
+  color: var(--color-logo);
+}
+
+/* Path 기반 타이틀: fill 없음, stroke만으로 외곽선 그리기 */
+.hero-path-title.hero-stroke-wrap {
+  display: block;
+}
+.hero-path-title .hero-path-svg {
+  color: var(--color-logo);
+}
+.hero-path-char {
+  fill: none;
+  stroke: currentColor;
+  vector-effect: non-scaling-stroke;
+}
+
+/* 부제 — 타이틀 쓰인 뒤 같은 Write-on 스타일 */
+.hero-subtitle {
+  font-family: var(--font-family-cursive) !important;
+  font-size: 2.35em;
+  font-weight: 400;
+  color: var(--color-text-sub);
+  line-height: 1.7;
+  text-shadow: none;
+}
+
+.hero-subtitle .hero-stroke-svg {
+  color: var(--color-text-sub);
+}
+
+.hero-search-wrap {
+  margin: 24px auto 0;
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* 🌟 CTA 버튼 — MinKowskiM과 같은 글씨체 + 등장 + 호버, 글씨 조금 더 크고 두껍게 */
+.hero-section .btn-primary {
+  font-family: var(--font-family-cursive) !important;
+  font-size: 1.14rem;
+  font-weight: 500;
+  display: inline-block;
+  margin-top: 28px;
+  margin-bottom: 0;
+  opacity: 0;
+  animation: heroBtnIn 0.6s ease-out 0.75s forwards;
+  transform-origin: center;
+}
+
+.hero-section .btn-primary:hover {
+  transform: translateY(0) scale(1.04);
+}
+
+@keyframes heroBtnIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------------------------------------------------------------- */
+/* --- 2. 최신 포스트 섹션 --- */
+/* ---------------------------------------------------------------- */
+
+/* .latest-posts-section .section-title, .category-section .section-title {
+    font-size: 1.8em;
+    font-weight: 700;
+    color: var(--color-text-main);
+    margin-bottom: 30px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--color-border);
+} */
+
+.latest-posts-section .section-title,
+.category-section .section-title {
+  /* 🌟 폰트만 필기체로 변경 (MinKowskiM과 동일) */
+  font-family: var(--font-family-cursive) !important;
+
+  /* 🌟 글자 크기는 요청하신 대로 기존과 동일하게 유지 */
+  font-size: 1.8em;
+
+  /* 🌟 필기체 스타일에 맞춘 두께 및 기본 설정 */
+  font-weight: 400;
+  color: var(--color-text-main);
+  margin-bottom: 30px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.latest-posts-section {
+  margin-bottom: 60px;
+}
+
+.post-list {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(min(100%, 288px), 1fr)
+  );
+  gap: clamp(20px, 3.5vw, 32px);
+  align-items: stretch;
+}
+
+.post-list-popular {
+  gap: clamp(20px, 3.5vw, 32px);
+}
+
+/* ---------------------------------------------------------------- */
+/* --- 3. 포스트 카드 — Velog 피드에 가깝게 (썸네일 16:9 · 얇은 카드 · 평문 요약) --- */
+/* ---------------------------------------------------------------- */
+
+.post-card {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  box-shadow: 0 4px 14px var(--color-shadow);
+  transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  min-height: 100%;
+}
+
+.post-card--feed {
+  padding: 0;
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-border) 80%, transparent),
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    0 8px 24px rgba(0, 0, 0, 0.04);
+}
+
+body.dark-mode .post-card--feed {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-border) 90%, transparent),
+    0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.post-card:hover {
+  box-shadow: 0 12px 28px var(--color-shadow-strong);
+  transform: translateY(-4px);
+  border-color: var(--color-accent);
+  text-decoration: none;
+}
+
+.post-card--feed:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 35%, var(--color-border)),
+    0 6px 20px rgba(0, 0, 0, 0.07),
+    0 12px 32px rgba(0, 0, 0, 0.06);
+}
+
+body.dark-mode .post-card--feed:hover {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 40%, transparent),
+    0 8px 28px rgba(0, 0, 0, 0.45);
+}
+
+/* Velog: 썸네일 16:9 */
+.post-card__media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #f5f5f5;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+body.dark-mode .post-card__media {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.post-card__media-el {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.post-card__media-el--video {
+  object-fit: cover;
+}
+
+.post-card__media-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.2) 0%, transparent 45%);
+}
+
+.post-card__media--default {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border-bottom: 1px solid var(--color-border);
+}
+
+body.dark-mode .post-card__media--default {
+  background: var(--color-primary);
+}
+
+.post-card__default-title {
+  font-family: var(--font-family-cursive), var(--font-caveat), Caveat, cursive;
+  font-size: clamp(1.75rem, 5vw, 2.35rem);
+  font-weight: 400;
+  color: var(--color-logo, var(--color-text-main));
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+.post-card__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: clamp(14px, 3vw, 16px);
+  min-height: 0;
+}
+
+/* Velog: 제목 17px 전후, 세미볼드, 2줄 */
+.post-card__title {
+  font-size: clamp(1rem, 2.9vw, 1.0625rem);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  color: var(--color-text-main);
+  margin: 0 0 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* 평문 미리보기: 동일 크기·톤, 최대 3줄 (마크다운 기호 없음) */
+.post-card__excerpt {
+  flex: 1;
+  min-height: 0;
+  margin: 0 0 12px;
+}
+
+.post-card__excerpt-text {
+  margin: 0;
+  padding: 0;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--color-text-sub);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  word-break: break-word;
+}
+
+.post-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 0.8125rem;
+  color: var(--color-text-sub);
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 85%, transparent);
+  padding-top: 12px;
+  margin-top: auto;
+}
+
+@media (max-width: 380px) {
+  .post-meta {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* --- 4. 카테고리 링크 섹션 (깔끔하게) --- */
+.category-section {
+  margin-top: 60px;
+  padding: 40px 0;
+}
+
+.category-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+@media (max-width: 600px) {
+  .hero-section {
+    padding: 80px 20px;
+  }
+  .hero-title {
+    font-size: 3.5rem;
+  }
+  .hero-subtitle {
+    font-size: 1.7rem;
+  }
+  .post-list {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  /* 모바일: Velog처럼 카드 전폭, 본문 15px 유지 */
+  .post-card__excerpt-text {
+    font-size: 0.9375rem;
+    -webkit-line-clamp: 3;
+  }
+}

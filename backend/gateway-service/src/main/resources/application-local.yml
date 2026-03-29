@@ -1,0 +1,30 @@
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: user-service-local
+          uri: http://localhost:8081
+          predicates:
+            - Path=/user,/user/**
+          filters: [PreserveHostHeader]
+        - id: auth-service-local
+          uri: http://localhost:8084
+          predicates:
+            - Path=/auth,/auth/**
+          filters: [PreserveHostHeader]
+        - id: post-service-local
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/posts,/api/posts/**,/api/post-drafts,/api/post-drafts/**
+          filters: [PreserveHostHeader]
+        - id: search-service-local
+          uri: http://localhost:8010
+          predicates:
+            - Path=/api/search,/api/search/**
+          filters: [PreserveHostHeader]
+        - id: fastapi-ai-local
+          uri: http://localhost:8000
+          predicates:
+            - Path=/chat,/chat/**
+          filters: [PreserveHostHeader]
+

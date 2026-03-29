@@ -1,0 +1,691 @@
+/* System Structure — 이중 물리 서버 + src 스타일 SVG 흐름선 */
+
+.structure-page--systems {
+  padding: clamp(16px, 3vw, 40px) max(clamp(12px, 2.5vw, 24px), env(safe-area-inset-left, 0px))
+    clamp(40px, 6vw, 80px) max(clamp(12px, 2.5vw, 24px), env(safe-area-inset-right, 0px));
+  max-width: 1320px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.structure-header {
+  margin-bottom: clamp(20px, 4vw, 36px);
+  text-align: center;
+}
+
+.structure-title {
+  font-size: clamp(1.45rem, 3.5vw, 2rem);
+  color: var(--color-text-main);
+  margin-bottom: 8px;
+}
+
+.structure-description {
+  color: var(--color-text-sub);
+  font-size: clamp(0.88rem, 2.2vw, 1rem);
+  line-height: 1.65;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* ----- 두 패널: 앱 | 구분 | 관측 ----- */
+.structure-panels {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(20px, 4vw, 32px);
+  width: 100%;
+  align-items: stretch;
+}
+
+@media (min-width: 1080px) {
+  .structure-panels {
+    grid-template-columns: minmax(0, 1fr) minmax(56px, 72px) minmax(0, 1fr);
+    gap: clamp(12px, 2vw, 24px);
+    align-items: start;
+  }
+}
+
+.structure-panel {
+  min-width: 0;
+}
+
+.structure-panel__title {
+  font-size: clamp(1.05rem, 2.5vw, 1.25rem);
+  color: var(--color-text-main);
+  margin: 0 0 8px;
+  line-height: 1.3;
+}
+
+.structure-panel__meta {
+  font-size: clamp(0.78rem, 2vw, 0.88rem);
+  color: var(--color-text-sub);
+  line-height: 1.55;
+  margin: 0 0 14px;
+}
+
+.structure-panel__meta a {
+  color: var(--color-accent);
+}
+
+.structure-panel__code {
+  font-size: 0.92em;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--color-border) 45%, transparent);
+  word-break: break-all;
+}
+
+.structure-panel__footnote {
+  font-size: clamp(0.75rem, 1.8vw, 0.82rem);
+  color: var(--color-text-sub);
+  line-height: 1.5;
+  margin: 14px 4px 0;
+}
+
+.structure-inter-server {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 0;
+  color: var(--color-text-sub);
+}
+
+@media (min-width: 1080px) {
+  .structure-inter-server {
+    flex-direction: column;
+    padding: 120px 0 0;
+    gap: 10px;
+  }
+}
+
+.structure-inter-server__label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1.35;
+  max-width: 12ch;
+}
+
+.structure-inter-server__line {
+  flex: 1;
+  height: 2px;
+  max-width: 120px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--color-border),
+    var(--color-border) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+}
+
+@media (min-width: 1080px) {
+  .structure-inter-server__line {
+    width: 2px;
+    height: clamp(48px, 12vw, 120px);
+    max-width: none;
+    flex: none;
+    background: repeating-linear-gradient(
+      180deg,
+      var(--color-border),
+      var(--color-border) 6px,
+      transparent 6px,
+      transparent 12px
+    );
+  }
+}
+
+/* 좁은 화면에서 구조도가 잘리지 않도록 가로 스크롤 */
+.arch-diagram-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+}
+
+/* 좁은 화면에서 6열 노드가 겹치지 않도록 최소 너비 확보 → 가로 스크롤 */
+@media (max-width: 720px) {
+  .arch-diagram-wrap .arch-diagram--app {
+    min-width: 520px;
+  }
+
+  .arch-diagram-wrap .arch-diagram--obs {
+    min-width: 420px;
+  }
+}
+
+/* ----- Architecture diagram (src/structure 스타일) ----- */
+.arch-diagram {
+  position: relative;
+  width: 100%;
+  margin: 0 auto;
+  padding: clamp(12px, 2.5vw, 24px) clamp(10px, 2vw, 20px) clamp(14px, 2.5vw, 22px);
+  box-sizing: border-box;
+  overflow: hidden;
+  background: var(--color-primary);
+  border: 2px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px var(--color-shadow);
+}
+
+.arch-diagram--app {
+  min-height: clamp(460px, 64vw, 780px);
+  aspect-ratio: unset;
+  /* 6열 노드가 넓어질 때 겹침 방지: 필요 시 가로 스크롤로 해결 */
+  min-width: 920px;
+}
+
+.arch-diagram--obs {
+  min-height: clamp(360px, 54vw, 620px);
+}
+
+.arch-svg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.arch-line {
+  stroke: var(--color-border);
+  stroke-width: 0.65;
+  fill: none;
+}
+
+/* 선 끝 삼각형(방향). 흐름 애니메이션과 겹쳐 ‘데이터가 끝으로 간다’는 인지 보조 */
+.arch-arrow-head {
+  fill: var(--color-accent);
+}
+
+.arch-line-extra {
+  stroke: var(--color-border);
+  stroke-width: 0.55;
+  stroke-dasharray: 3 6;
+  opacity: 0.85;
+}
+
+/*
+ * 흐름 레이어: 둥근 끝 + 짧은 세그먼트가 선을 따라 이동 → 화살 머리가 달린 막대가 흐르는 느낌에 가깝게
+ * (SVG dashed line은 세그먼트마다 marker가 반복되지 않으므로, 시각적으로는 ‘이동하는 꼬리’ 역할)
+ */
+.arch-line-flow {
+  stroke: var(--color-accent);
+  stroke-width: 0.72;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 4 16;
+  animation: archFlowDash 2.1s linear infinite;
+  opacity: 0.92;
+  animation-fill-mode: none;
+}
+
+.arch-line-flow-vert {
+  stroke-dasharray: 3 12;
+  animation: archFlowDashVert 1.95s linear infinite;
+  animation-fill-mode: none;
+}
+
+@keyframes archFlowDash {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -24;
+  }
+}
+
+@keyframes archFlowDashVert {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -19;
+  }
+}
+
+.arch-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.arch-layer .arch-node {
+  pointer-events: auto;
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+.arch-layer-0 .arch-node {
+  left: 50%;
+  top: 8%;
+}
+
+.arch-layer-1 .arch-node {
+  left: 50%;
+  top: 26%;
+}
+
+.arch-layer-2 .arch-node:first-child {
+  left: 22%;
+  top: 44%;
+}
+
+.arch-layer-2 .arch-node:last-child {
+  left: 78%;
+  top: 44%;
+}
+
+.arch-layer-3 .arch-node:nth-child(1) {
+  left: 8%;
+  top: 64%;
+}
+.arch-layer-3 .arch-node:nth-child(2) {
+  left: 24%;
+  top: 64%;
+}
+.arch-layer-3 .arch-node:nth-child(3) {
+  left: 40%;
+  top: 64%;
+}
+.arch-layer-3 .arch-node:nth-child(4) {
+  left: 60%;
+  top: 64%;
+}
+.arch-layer-3 .arch-node:nth-child(5) {
+  left: 76%;
+  top: 64%;
+}
+.arch-layer-3 .arch-node:nth-child(6) {
+  left: 92%;
+  top: 64%;
+}
+
+.arch-layer-4 .arch-node:nth-child(1) {
+  left: 8%;
+  top: 88%;
+}
+.arch-layer-4 .arch-node:nth-child(2) {
+  left: 24%;
+  top: 88%;
+}
+.arch-layer-4 .arch-node:nth-child(3) {
+  left: 40%;
+  top: 88%;
+}
+.arch-layer-4 .arch-node:nth-child(4) {
+  left: 60%;
+  top: 88%;
+}
+.arch-layer-4 .arch-node:nth-child(5) {
+  left: 76%;
+  top: 88%;
+}
+.arch-layer-4 .arch-node:nth-child(6) {
+  left: 92%;
+  top: 88%;
+}
+
+/* 관측 스택 노드 위치 (SVG 선 끝점과 동일 % — 좌우 여유) */
+.arch-layer-obs-0 .arch-node {
+  left: 50%;
+  top: 10%;
+}
+
+.arch-layer-obs-1 .arch-node {
+  left: 50%;
+  top: 34%;
+}
+
+.arch-layer-obs-2 .arch-node:nth-child(1) {
+  left: 14%;
+  top: 74%;
+}
+.arch-layer-obs-2 .arch-node:nth-child(2) {
+  left: 50%;
+  top: 74%;
+}
+.arch-layer-obs-2 .arch-node:nth-child(3) {
+  left: 86%;
+  top: 74%;
+}
+
+.arch-node {
+  padding: clamp(6px, 1.2vw, 12px) clamp(8px, 1.5vw, 16px);
+  background: var(--color-primary);
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.3s;
+  text-align: center;
+  min-width: min(96px, 18vw);
+  max-width: 132px;
+  box-shadow: 0 2px 8px var(--color-shadow);
+  animation: archNodeSparkle 7s ease-in-out infinite;
+  position: relative;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+}
+
+.arch-node.is-selected {
+  animation: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(84, 110, 122, 0.25);
+}
+
+.arch-node::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 14px;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: 0 0 12px 2px rgba(84, 110, 122, 0.5);
+  animation: archNodeSparkleRing 7s ease-in-out infinite;
+}
+
+.arch-node.is-selected::after {
+  animation: none;
+  opacity: 0;
+}
+
+@keyframes archNodeSparkle {
+  0%,
+  100% {
+    box-shadow: 0 2px 8px var(--color-shadow);
+    filter: brightness(1);
+  }
+  4% {
+    box-shadow: 0 0 0 2px rgba(84, 110, 122, 0.3), 0 2px 10px var(--color-shadow);
+    filter: brightness(1.12);
+  }
+  7% {
+    box-shadow: 0 0 0 1px rgba(84, 110, 122, 0.18), 0 2px 9px var(--color-shadow);
+    filter: brightness(1.04);
+  }
+  12%,
+  100% {
+    box-shadow: 0 2px 8px var(--color-shadow);
+    filter: brightness(1);
+  }
+}
+
+@keyframes archNodeSparkleRing {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  4% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  5% {
+    opacity: 0.4;
+    transform: scale(1.03);
+  }
+  7%,
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+.arch-layer-0 .arch-node,
+.arch-layer-0 .arch-node::after {
+  animation-delay: 0s;
+}
+.arch-layer-1 .arch-node,
+.arch-layer-1 .arch-node::after {
+  animation-delay: 0.5s;
+}
+.arch-layer-2 .arch-node:first-child,
+.arch-layer-2 .arch-node:first-child::after {
+  animation-delay: 1s;
+}
+.arch-layer-2 .arch-node:last-child,
+.arch-layer-2 .arch-node:last-child::after {
+  animation-delay: 1.4s;
+}
+.arch-layer-3 .arch-node:nth-child(1),
+.arch-layer-3 .arch-node:nth-child(1)::after {
+  animation-delay: 1.9s;
+}
+.arch-layer-3 .arch-node:nth-child(2),
+.arch-layer-3 .arch-node:nth-child(2)::after {
+  animation-delay: 2.3s;
+}
+.arch-layer-3 .arch-node:nth-child(3),
+.arch-layer-3 .arch-node:nth-child(3)::after {
+  animation-delay: 2.7s;
+}
+.arch-layer-3 .arch-node:nth-child(4),
+.arch-layer-3 .arch-node:nth-child(4)::after {
+  animation-delay: 3.1s;
+}
+.arch-layer-3 .arch-node:nth-child(5),
+.arch-layer-3 .arch-node:nth-child(5)::after {
+  animation-delay: 3.5s;
+}
+.arch-layer-3 .arch-node:nth-child(6),
+.arch-layer-3 .arch-node:nth-child(6)::after {
+  animation-delay: 3.9s;
+}
+.arch-layer-4 .arch-node:nth-child(1),
+.arch-layer-4 .arch-node:nth-child(1)::after {
+  animation-delay: 4.3s;
+}
+.arch-layer-4 .arch-node:nth-child(2),
+.arch-layer-4 .arch-node:nth-child(2)::after {
+  animation-delay: 4.7s;
+}
+.arch-layer-4 .arch-node:nth-child(3),
+.arch-layer-4 .arch-node:nth-child(3)::after {
+  animation-delay: 5.1s;
+}
+.arch-layer-4 .arch-node:nth-child(4),
+.arch-layer-4 .arch-node:nth-child(4)::after {
+  animation-delay: 5.5s;
+}
+.arch-layer-4 .arch-node:nth-child(5),
+.arch-layer-4 .arch-node:nth-child(5)::after {
+  animation-delay: 5.9s;
+}
+.arch-layer-4 .arch-node:nth-child(6),
+.arch-layer-4 .arch-node:nth-child(6)::after {
+  animation-delay: 6.3s;
+}
+
+.arch-layer-obs-0 .arch-node,
+.arch-layer-obs-0 .arch-node::after {
+  animation-delay: 0.2s;
+}
+.arch-layer-obs-1 .arch-node,
+.arch-layer-obs-1 .arch-node::after {
+  animation-delay: 0.7s;
+}
+.arch-layer-obs-2 .arch-node:nth-child(1),
+.arch-layer-obs-2 .arch-node:nth-child(1)::after {
+  animation-delay: 1.2s;
+}
+.arch-layer-obs-2 .arch-node:nth-child(2),
+.arch-layer-obs-2 .arch-node:nth-child(2)::after {
+  animation-delay: 1.5s;
+}
+.arch-layer-obs-2 .arch-node:nth-child(3),
+.arch-layer-obs-2 .arch-node:nth-child(3)::after {
+  animation-delay: 1.8s;
+}
+
+.arch-node__label {
+  font-weight: 700;
+  font-size: clamp(0.72rem, 2vw, 0.95rem);
+  color: var(--color-text-main);
+  margin-bottom: 4px;
+  line-height: 1.2;
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.arch-node__sub {
+  font-size: clamp(0.58rem, 1.65vw, 0.72rem);
+  color: var(--color-text-sub);
+  line-height: 1.3;
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.arch-layer-0 .arch-node,
+.arch-layer-1 .arch-node {
+  min-width: min(100px, 18vw);
+  max-width: min(160px, 28vw);
+  overflow: hidden;
+}
+
+.arch-layer-2 .arch-node {
+  min-width: min(100px, 18vw);
+  max-width: min(160px, 28vw);
+  overflow: hidden;
+}
+
+.arch-layer-obs-2 .arch-node {
+  min-width: min(88px, 16vw);
+  max-width: min(140px, 22vw);
+  overflow: hidden;
+}
+
+.arch-node:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 2px 12px var(--color-shadow);
+  transform: translate(-50%, -50%) translateY(-0.5px);
+}
+
+/* ----- 결과 영역 ----- */
+.structure-results {
+  width: 100%;
+  margin-top: clamp(20px, 4vw, 32px);
+  padding: clamp(20px, 3vw, 28px) 0;
+  border-top: 2px solid var(--color-border);
+}
+
+.structure-results__title {
+  font-size: clamp(1.15rem, 2.8vw, 1.4rem);
+  color: var(--color-text-main);
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.structure-results__loading,
+.structure-results__empty {
+  color: var(--color-text-sub);
+  margin: 20px 0;
+}
+
+.structure-results__link {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
+.structure-results__link:hover {
+  text-decoration: none;
+}
+
+.structure-results__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: clamp(16px, 3vw, 24px);
+  margin-bottom: 20px;
+}
+
+.structure-results__more {
+  margin-top: 16px;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 900px) {
+  .arch-diagram--app {
+    min-height: clamp(340px, 95vw, 560px);
+  }
+
+  .arch-node {
+    min-width: min(72px, 16vw);
+    max-width: min(120px, 26vw);
+    padding: 6px 8px;
+  }
+
+  .arch-layer-0 .arch-node,
+  .arch-layer-1 .arch-node {
+    min-width: min(72px, 16vw);
+    max-width: min(120px, 26vw);
+  }
+
+  .arch-layer-2 .arch-node {
+    max-width: min(120px, 26vw);
+  }
+}
+
+@media (max-width: 600px) {
+  .arch-diagram--app {
+    min-height: clamp(440px, 115vw, 520px);
+    padding: 10px 8px 14px;
+  }
+
+  .arch-diagram--obs {
+    min-height: clamp(300px, 72vw, 380px);
+  }
+
+  .arch-node {
+    min-width: 56px;
+    max-width: min(78px, 15vw);
+    padding: 5px 6px;
+    border-radius: 10px;
+  }
+
+  .arch-node__label {
+    font-size: 0.68rem;
+    margin-bottom: 2px;
+  }
+
+  .arch-node__sub {
+    font-size: 0.52rem;
+    line-height: 1.15;
+  }
+
+  .arch-layer-0 .arch-node,
+  .arch-layer-1 .arch-node {
+    min-width: min(56px, 25vw);
+    max-width: min(78px, 15vw);
+    padding: 5px 6px;
+  }
+
+  .arch-layer-2 .arch-node {
+    min-width: min(56px, 25vw);
+    max-width: min(78px, 15vw);
+  }
+
+  .arch-layer-obs-2 .arch-node {
+    min-width: min(56px, 25vw);
+    max-width: min(78px, 15vw);
+  }
+
+  .structure-results__grid {
+    grid-template-columns: 1fr;
+  }
+}

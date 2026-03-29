@@ -1,0 +1,32 @@
+# 운영 환경 — docker-compose.yml 의 services 키 이름으로 라우팅 (내부 DNS).
+# container_name(msa-user 등)은 Compose 기본 DNS에 등록되지 않음 → 502 원인 방지.
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: user-service
+          uri: http://user-service:8081
+          predicates:
+            - Path=/user,/user/**
+          filters: [PreserveHostHeader]
+        # /auth, /auth/send-code, /auth/login 등 모두 매칭 (단일 Path에 여러 패턴)
+        - id: auth-service
+          uri: http://auth-service:8084
+          predicates:
+            - Path=/auth,/auth/**
+          filters: [PreserveHostHeader]
+        - id: post-service
+          uri: http://post-service:8082
+          predicates:
+            - Path=/api/posts,/api/posts/**,/api/post-drafts,/api/post-drafts/**
+          filters: [PreserveHostHeader]
+        - id: fastapi-ai
+          uri: http://fastapi-ai:8000
+          predicates:
+            - Path=/chat,/chat/**
+          filters: [PreserveHostHeader]
+        - id: search-service
+          uri: http://search-service:8010
+          predicates:
+            - Path=/api/search,/api/search/**
+          filters: [PreserveHostHeader]

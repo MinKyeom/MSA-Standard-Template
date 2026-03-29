@@ -1,0 +1,626 @@
+/* src/styles/globals.css (전역 스타일 및 테마 정의) */
+
+/* ---------------------------------------------------------------- */
+/* --- 1. 라이트 모드 (기본 스타일) --- */
+/* ---------------------------------------------------------------- */
+:root {
+  /* 폰트 설정 */
+  /* 🌟 한국어 우선 폰트 설정 */
+  --font-family-main: "Spoqa Han Sans Neo", "Inter", sans-serif;
+  /* 🌟 감성적 디자인을 위한 필기체 폰트 변수 */
+  /* --font-family-cursive: 'Sacramento', cursive; */
+  --font-family-cursive: var(--font-caveat), cursive;
+  /* 라이트 모드 (가을 이미지 톤에 맞춤) */
+  --color-background: #faf5ee; /* 가을 하늘과 어울리는 담황색 */
+  --color-primary: #fdfbf7; /* 카드·헤더 (따뜻한 화이트) */
+  --color-secondary: #f3ebe0; /* 보조 배경 */
+  --color-text-main: #212121; /* 기본 텍스트 (진한 회색) */
+  --color-text-sub: #757575; /* 서브 텍스트 (중간 회색) */
+
+  /* 🌟 로고/강조색 변경 (파란색 -> 세련된 회색/검정) */
+  --color-accent: #546e7a; /* 강조 색상 (소프트한 청회색) */
+  --color-link: #37474f; /* 링크 색상 */
+  --color-logo: #333333; /* 🌟 로고 색상 (다크 모드 대비) */
+
+  --color-border: rgba(0, 0, 0, 0.1); /* 테두리 (라이트) */
+  --color-shadow: rgba(0, 0, 0, 0.05); /* 얕은 그림자 (라이트) */
+  --color-shadow-strong: rgba(0, 0, 0, 0.15); /* 강한 그림자 (라이트) */
+  --color-success: #2e7d32;
+  --color-error: #c62828;
+}
+
+/* ---------------------------------------------------------------- */
+/* --- 2. 다크 모드 --- */
+/* ---------------------------------------------------------------- */
+body.dark-mode {
+  /* 🌟 남색 대신 검은색에 가까운 다크 톤 */
+  --color-background: #07080a;
+  --color-primary: #0c0d10;
+  --color-secondary: #12141a;
+  --color-text-main: #e2e6ee;
+  --color-text-sub: #9ca8b8;
+
+  /* 🌟 로고/강조색 (밤하늘 톤에 맞춤) */
+  --color-accent: #8ba3c7;
+  --color-link: #b8c8dc;
+  --color-logo: #e2e6ee;
+
+  --color-border: rgba(255, 255, 255, 0.12);
+  --color-shadow: rgba(0, 0, 0, 0.35);
+  --color-shadow-strong: rgba(0, 0, 0, 0.5);
+  --color-success: #66bb6a;
+  --color-error: #ef5350;
+}
+
+/* ---------------------------------------------------------------- */
+/* --- 3. 기본 및 리셋 스타일 --- */
+/* ---------------------------------------------------------------- */
+html {
+  box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family-main);
+  background-color: var(--color-background);
+  color: var(--color-text-main);
+  line-height: 1.6;
+}
+
+a {
+  color: var(--color-link);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--color-accent);
+}
+
+.cursive-title {
+  font-family: var(--font-family-cursive) !important;
+  font-size: 1.6rem !important;
+  font-weight: 400 !important;
+  margin-bottom: 15px !important;
+}
+
+/* ---------------------------------------------------------------- */
+/* --- 4. 앱 레이아웃 컨테이너 --- */
+/* ---------------------------------------------------------------- */
+.App {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content-container {
+  flex-grow: 1;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* 로그인/회원가입 페이지일 때 본문 영역을 flex로 만들어 카드 중앙 정렬 */
+.main-content-container:has(.auth-page) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------------------------------------------------------------- */
+/* --- 5. 공통 버튼 스타일 --- */
+/* ---------------------------------------------------------------- */
+.btn-primary,
+.btn-secondary,
+.btn-link-primary {
+  cursor: pointer;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-align: center;
+  transition: all 0.2s ease-in-out;
+  border: none;
+}
+
+.btn-primary {
+  background-color: var(--color-accent);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #455a64; /* Accent color dark variant */
+  box-shadow: 0 4px 10px var(--color-shadow-strong);
+}
+
+.btn-secondary {
+  background-color: var(--color-secondary);
+  color: var(--color-text-main);
+  border: 1px solid var(--color-border);
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-border);
+}
+
+/* Small Buttons */
+.btn-primary-small,
+.btn-secondary-small {
+  padding: 8px 15px;
+  border-radius: 6px;
+  font-size: 0.9em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  border: none;
+}
+.btn-primary-small {
+  background-color: var(--color-accent);
+  color: white;
+}
+.btn-primary-small:hover {
+  background-color: #455a64;
+}
+.btn-secondary-small {
+  background-color: var(--color-secondary);
+  color: var(--color-text-main);
+  border: 1px solid var(--color-border);
+}
+.btn-secondary-small:hover {
+  background-color: var(--color-border);
+}
+
+/* ---------------------------------------------------------------- */
+/* --- 6. 태그 및 카테고리 배지 --- */
+/* ---------------------------------------------------------------- */
+.tag-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  margin-right: 8px;
+  margin-bottom: 8px;
+  background-color: var(--color-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  font-size: 0.9em;
+  color: var(--color-text-main);
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.category-link {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: var(--color-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  font-weight: 600;
+  color: var(--color-text-main);
+  transition: all 0.3s;
+}
+.category-link:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 4px 12px var(--color-shadow);
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+/* ---------------------------------------------------------------- */
+/* --- 7. 마크다운 스타일 (MarkdownRenderer에서 사용) --- */
+/* ---------------------------------------------------------------- */
+
+.markdown-body {
+  /* 마크다운 컨테이너 기본 스타일 */
+  line-height: 1.8;
+  color: var(--color-text-main);
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4 {
+  color: var(--color-text-main);
+  margin-top: 40px;
+  margin-bottom: 20px;
+  font-weight: 700;
+}
+.markdown-body h1 {
+  font-size: 2.2em;
+  border-bottom: 2px solid var(--color-border);
+  padding-bottom: 8px;
+}
+.markdown-body h2 {
+  font-size: 1.8em;
+  border-bottom: 1px dashed var(--color-border);
+  padding-bottom: 6px;
+}
+.markdown-body h3 {
+  font-size: 1.5em;
+}
+.markdown-body p {
+  margin-bottom: 1em;
+}
+
+.markdown-body a {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
+/* 인용구 스타일 */
+.markdown-blockquote {
+  margin: 20px 0;
+  padding: 15px 20px;
+  border-left: 5px solid var(--color-accent);
+  background-color: var(--color-secondary);
+  border-radius: 4px;
+  color: var(--color-text-main);
+  font-style: italic;
+}
+
+/* 코드 스타일 */
+/* 인라인 코드 */
+.markdown-inline-code {
+  background-color: var(--color-secondary);
+  color: var(--color-accent);
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+/* 코드 블록 (react-syntax-highlighter에 의해 스타일링됩니다. */
+/* 추가적인 전역 CSS는 필요하지 않습니다.) */
+
+/* ---------------------------------------------------------------- */
+/* --- 8. 유틸리티 및 폼 공통 스타일 (글쓰기 페이지 포함) --- */
+/* ---------------------------------------------------------------- */
+
+/* 폼 입력 필드 */
+.post-form-input,
+.post-form-textarea {
+  width: 100%;
+  padding: 15px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 1.1em;
+  background-color: var(--color-secondary);
+  color: var(--color-text-main);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.post-form-input:focus,
+.post-form-textarea:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent);
+  outline: none;
+}
+
+/* ---------------------------------------------------------------- */
+/* --- 9. 전체 사이트 배경: 가을 이미지 / 밤하늘 이미지 톤 --- */
+/* ---------------------------------------------------------------- */
+.global-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  min-height: 100%;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* 라이트: 나무길 가을 – 따뜻한 갈색·담황·부드러운 하늘 */
+.global-bg-leaves {
+  position: absolute;
+  inset: 0;
+  min-width: 100%;
+  min-height: 100%;
+  display: block;
+}
+
+body.dark-mode .global-bg-leaves {
+  display: none;
+}
+
+.global-bg-leaves-sky {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    #faf5ee 0%,
+    #f3e9dc 18%,
+    #eadcc8 38%,
+    #e0cfb8 58%,
+    #d4c2a8 78%,
+    #c9b598 100%
+  );
+}
+
+.global-bg-leaf {
+  position: absolute;
+  top: -5%;
+  width: 22px;
+  height: 36px;
+  color: var(--leaf-color, #b85c38);
+  transform: translateX(-50%) scale(var(--leaf-scale, 1)) rotate(var(--leaf-rotate-start, 0deg));
+  animation: globalLeafFall ease-in-out infinite;
+  opacity: 0;
+}
+
+.global-bg-leaf-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.08));
+}
+
+@keyframes globalLeafFall {
+  0% {
+    transform: translateX(-50%) translateY(0) scale(var(--leaf-scale, 1)) rotate(var(--leaf-rotate-start, 0deg));
+    opacity: 0;
+  }
+  2% { opacity: 0.82; }
+  22% {
+    transform: translateX(calc(-50% + 5px)) translateY(22vh) scale(var(--leaf-scale, 1)) rotate(calc(var(--leaf-rotate-start, 0deg) + 55deg));
+  }
+  48% {
+    transform: translateX(calc(-50% - 4px)) translateY(48vh) scale(var(--leaf-scale, 1)) rotate(calc(var(--leaf-rotate-start, 0deg) + 140deg));
+  }
+  72% {
+    transform: translateX(calc(-50% + 6px)) translateY(72vh) scale(var(--leaf-scale, 1)) rotate(calc(var(--leaf-rotate-start, 0deg) + 240deg));
+  }
+  98% { opacity: 0.55; }
+  100% {
+    transform: translateX(calc(-50% + var(--leaf-sway, 0px))) translateY(106vh) scale(var(--leaf-scale, 1)) rotate(calc(var(--leaf-rotate-start, 0deg) + 360deg));
+    opacity: 0;
+  }
+}
+
+/* 다크: 밤하늘 이미지 – 깊은 남색·은하수 느낌·자연스러운 유성 */
+.global-bg-night {
+  position: absolute;
+  inset: 0;
+  min-width: 100%;
+  min-height: 100%;
+  display: none;
+}
+
+body.dark-mode .global-bg-night {
+  display: block;
+}
+
+.global-bg-night-sky {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* 🌟 파란 느낌 줄이고 검은색에 가까운 그라데이션 */
+  background: linear-gradient(
+    180deg,
+    #050508 0%,
+    #08090c 25%,
+    #0a0b0f 45%,
+    #08090c 65%,
+    #060708 85%,
+    #040506 100%
+  );
+}
+
+.global-bg-milky {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 120% 40% at 50% 35%,
+    rgba(120, 150, 220, 0.06) 0%,
+    transparent 55%
+  );
+  pointer-events: none;
+}
+
+.global-bg-stars {
+  position: absolute;
+  inset: 0;
+}
+
+.global-bg-star {
+  position: absolute;
+  border-radius: 50%;
+  background: #fff;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 3px 1px rgba(255, 255, 255, 0.35);
+}
+
+.global-bg-star--twinkle {
+  animation: globalStarTwinkle 5.5s ease-in-out infinite;
+}
+
+@keyframes globalStarTwinkle {
+  0%, 100% { opacity: 0.25; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.12); }
+}
+
+.global-bg-meteors {
+  position: absolute;
+  inset: 0;
+}
+
+.global-bg-meteor {
+  position: absolute;
+  width: var(--meteor-width, 150px);
+  height: 2px;
+  transform: rotate(var(--meteor-angle, -62deg));
+  transform-origin: left center;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(255, 255, 255, 0.82) 12%,
+    rgba(200, 220, 255, 0.38) 38%,
+    rgba(160, 190, 255, 0.08) 62%,
+    transparent 82%
+  );
+  box-shadow: 0 0 8px 1px rgba(255, 255, 255, 0.3);
+  animation: globalMeteorFall ease-out infinite;
+}
+
+@keyframes globalMeteorFall {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--meteor-angle, -62deg)) translateX(0) translateY(0);
+  }
+  4% { opacity: 1; }
+  88% { opacity: 0.75; }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--meteor-angle, -62deg)) translateX(-78vw) translateY(88vh);
+  }
+}
+
+/* ---------------------------------------------------------------- */
+/* 포스트 목록·상세·글쓰기 — 뷰포트 대응 */
+/* ---------------------------------------------------------------- */
+
+.post-list-page {
+  width: 100%;
+  max-width: min(1200px, 100%);
+  margin: 0 auto;
+  padding-left: clamp(12px, 4vw, 28px);
+  padding-right: clamp(12px, 4vw, 28px);
+  padding-top: clamp(24px, 5vw, 40px);
+  padding-bottom: clamp(48px, 8vw, 80px);
+  box-sizing: border-box;
+}
+
+.post-list-page .list-header h1 {
+  font-size: clamp(1.45rem, 5vw, 2.5rem);
+  line-height: 1.2;
+}
+
+.post-list-page .post-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: clamp(16px, 3vw, 28px);
+}
+
+.post-detail-container {
+  max-width: min(800px, 100%);
+  margin: 0 auto;
+  padding: clamp(24px, 5vw, 40px) clamp(12px, 4vw, 22px) clamp(40px, 8vw, 56px);
+  box-sizing: border-box;
+}
+
+.post-detail-title {
+  font-size: clamp(1.65rem, 5.5vw, 3rem);
+  font-weight: 900;
+  margin-bottom: 15px;
+  line-height: 1.2;
+  color: var(--color-text-main);
+}
+
+.write-page-shell {
+  padding: clamp(24px, 5vw, 40px) clamp(12px, 4vw, 24px);
+  max-width: min(1200px, 100%);
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.write-page-title {
+  color: var(--color-text-main);
+  font-size: clamp(1.35rem, 4vw, 2rem);
+  margin: 0;
+}
+
+.write-page-cover-uploads {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.write-page-file-label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-secondary);
+  color: var(--color-text-main);
+  font-size: 0.9rem;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.write-page-file-label.is-busy {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.write-page-file-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 0;
+}
+
+.write-page-file-input:disabled {
+  cursor: not-allowed;
+}
+
+.write-page-editor-row {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  min-height: min(600px, 70vh);
+  align-items: stretch;
+}
+
+.write-page-textarea {
+  flex: 1;
+  min-width: 0;
+  min-height: 280px;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-primary);
+  color: var(--color-text-main);
+  resize: vertical;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.write-page-preview {
+  flex: 1;
+  min-width: 0;
+  min-height: 280px;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background-color: var(--color-bg-sub, #f9f9f9);
+  overflow-y: auto;
+  color: var(--color-text-main);
+}
+
+@media (max-width: 900px) {
+  .write-page-editor-row {
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .write-page-textarea,
+  .write-page-preview {
+    min-height: 240px;
+  }
+}

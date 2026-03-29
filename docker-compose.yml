@@ -1,0 +1,494 @@
+# ============================================================
+# MSA 블로그 플랫폼 — 운영 (4GB Lightsail)
+# 원칙: 전체 컨테이너 메모리 합 4GB 초과 금지, 모든 서비스 mem_limit 설정
+# Java: -Xms256m -Xmx512m / Kafka KRaft만 사용 (Zookeeper 제거)
+# ============================================================
+
+services:
+  # ----- API Gateway (유일 진입점, JWT 검증·Trace ID) -----
+  api-gateway:
+    image: ${DOCKER_IMAGE_PREFIX:-local/msa}/gateway:${IMAGE_TAG:-latest}
+    build: ./backend/gateway-service
+    container_name: msa-gateway
+    expose:
+      - "8085"
+    ports:
+      - "8085:8085"
+    env_file: .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - JAVA_OPTS=-Xms128m -Xmx384m
+      - LOGGING_LEVEL_ROOT=${LOGGING_LEVEL_ROOT:-INFO}
+      - JWT_SECRET=${JWT_SECRET:-dev-only-replace-with-strong-secret-in-production}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:4000,http://127.0.0.1:3000,http://127.0.0.1:4000}
+    # JVM 힙은 반드시 mem_limit보다 충분히 작게(메타스페이스·직접 메모리·Netty 여유)
+    mem_limit: 512m
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    depends_on:
+      - auth-service
+      - user-service
+      - post-service
+      - fastapi-ai
+      - search-service
+    healthcheck:
+      # wget 없으면 항상 unhealthy → autoheal 무한 재시작. Dockerfile에 wget 설치 + nc 폴백
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q -O- http://127.0.0.1:8085/actuator/health >/dev/null 2>&1 || nc -z 127.0.0.1 8085",
+        ]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    labels:
+      - "autoheal=true"
+    networks:
+      - msa-network
+
+  # ----- Redis (캐시·Refresh Token·조회수 랭킹) -----
+  redis:
+    image: redis:alpine
+    container_name: msa-redis
+    command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    restart: always
+    mem_limit: 80m
+    networks:
+      - msa-network
+
+  # ----- Kafka (KRaft 모드, Zookeeper 없음) -----
+  # LogCleaner(SkimpyOffsetMap) 기동을 위해 힙·메모리 여유 필요. 256m에서는 OOM → 384m + 힙 256m
+  msa-kafka:
+    image: apache/kafka:3.7.0
+    container_name: msa-kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@msa-kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://msa-kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      CLUSTER_ID: 5L6g3nShT-eMCtK--X86sw
+      # LogCleaner(SkimpyOffsetMap) 메모리 부족 방지 — apache/kafka 이미지가 사용하는 변수
+      KAFKA_HEAP_OPTS: "-Xmx256m -Xms128m"
+    mem_limit: 384m
+    healthcheck:
+      # 공식 이미지: /opt/kafka/bin, KRaft 기동 지연 대비 start_period 여유
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/kafka/bin/kafka-broker-api-versions --bootstrap-server 127.0.0.1:9092 >/dev/null 2>&1 || exit 1",
+        ]
+      interval: 15s
+      timeout: 15s
+      retries: 8
+      start_period: 90s
+    networks:
+      - msa-network
+
+  # ----- DB: Auth -----
+  db-auth:
+    image: postgres:15-alpine
+    container_name: msa-db-auth
+    restart: always
+    env_file: .env
+    environment:
+      POSTGRES_DB: ${DB_AUTH_NAME:-mk_auth}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mink}
+    ports:
+      - "5434:5432"
+    volumes:
+      - ./data/auth_db:/var/lib/postgresql/data
+    mem_limit: 175m
+    networks:
+      - msa-network
+
+  # ----- DB: User -----
+  db-user:
+    image: postgres:15-alpine
+    container_name: msa-db-user
+    restart: always
+    env_file: .env
+    environment:
+      POSTGRES_DB: ${DB_USER_NAME:-mk_user}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mink}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data/user_db:/var/lib/postgresql/data
+    mem_limit: 175m
+    networks:
+      - msa-network
+
+  # ----- DB: Post -----
+  db-post:
+    image: postgres:15-alpine
+    container_name: msa-db-post
+    restart: always
+    env_file: .env
+    environment:
+      POSTGRES_DB: ${DB_POST_NAME:-mk_post}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mink}
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./data/post_db:/var/lib/postgresql/data
+    mem_limit: 175m
+    networks:
+      - msa-network
+
+  # ----- DB: Search (pgvector) -----
+  db-search:
+    image: pgvector/pgvector:pg15
+    container_name: msa-db-search
+    restart: always
+    env_file: .env
+    environment:
+      POSTGRES_DB: ${DB_SEARCH_NAME:-mk_search}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mink}
+    ports:
+      - "5435:5432"
+    volumes:
+      - ./data/search_db:/var/lib/postgresql/data
+    mem_limit: 175m
+    networks:
+      - msa-network
+
+  # ----- Auth Service -----
+  auth-service:
+    image: ${DOCKER_IMAGE_PREFIX:-local/msa}/auth:${IMAGE_TAG:-latest}
+    build: ./backend/auth-service
+    container_name: msa-auth
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    expose:
+      - "8084"
+    env_file: .env
+    environment:
+      - SPRING_REDIS_HOST=redis
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=msa-kafka:9092
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db-auth:5432/${DB_AUTH_NAME:-mk_auth}
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-mink}
+      - JAVA_OPTS=-Xms128m -Xmx400m
+      - JWT_SECRET=${JWT_SECRET:-dev-only-replace-with-strong-secret-in-production}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      # OAuth 콜백(브라우저→IdP→복귀). 로컬은 게이트웨이 8085. 운영은 Nginx 공개 URL(보통 https://도메인)
+      - OAUTH2_REDIRECT_BASE=${OAUTH2_REDIRECT_BASE:-http://localhost:8085}
+      - COOKIE_DOMAIN=${COOKIE_DOMAIN:-}
+      - LOGGING_LEVEL_ROOT=${LOGGING_LEVEL_ROOT:-INFO}
+    mem_limit: 512m
+    depends_on:
+      db-auth: { condition: service_started }
+      redis: { condition: service_started }
+      msa-kafka: { condition: service_started }
+    healthcheck:
+      # Alpine 이미지: bash 없음. context-path=/auth 이므로 /auth 요청 또는 nc 포트 체크
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8084/auth 2>/dev/null || nc -z 127.0.0.1 8084 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 50s
+    networks:
+      - msa-network
+
+  # ----- User Service -----
+  user-service:
+    image: ${DOCKER_IMAGE_PREFIX:-local/msa}/user:${IMAGE_TAG:-latest}
+    build: ./backend/user-service
+    container_name: msa-user
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    expose:
+      - "8081"
+    env_file: .env
+    environment:
+      - SPRING_REDIS_HOST=redis
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=msa-kafka:9092
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db-user:5432/${DB_USER_NAME:-mk_user}
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-mink}
+      - JAVA_OPTS=-Xms128m -Xmx400m
+      - JWT_SECRET=${JWT_SECRET:-dev-only-replace-with-strong-secret-in-production}
+      - LOGGING_LEVEL_ROOT=${LOGGING_LEVEL_ROOT:-INFO}
+    mem_limit: 512m
+    depends_on:
+      db-user: { condition: service_started }
+      redis: { condition: service_started }
+      msa-kafka: { condition: service_started }
+    healthcheck:
+      # Spring Security로 루트는 401 → 리슨 포트만 확인 (Kafka/JPA 기동 지연 대비 여유)
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8081 || exit 1"]
+      interval: 20s
+      timeout: 8s
+      retries: 6
+      start_period: 120s
+    labels:
+      - "autoheal=true"
+    networks:
+      - msa-network
+
+  # ----- Post Service -----
+  post-service:
+    image: ${DOCKER_IMAGE_PREFIX:-local/msa}/post:${IMAGE_TAG:-latest}
+    build: ./backend/post-service
+    container_name: msa-post
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    expose:
+      - "8082"
+    env_file: .env
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db-post:5432/${DB_POST_NAME:-mk_post}
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-mink}
+      - SPRING_REDIS_HOST=redis
+      - USER_SERVICE_URL=http://user-service:8081
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=msa-kafka:9092
+      - SPRING_PROFILES_ACTIVE=prod
+      - JAVA_OPTS=-Xms128m -Xmx400m
+      - JWT_SECRET=${JWT_SECRET:-dev-only-replace-with-strong-secret-in-production}
+      - POST_COVER_UPLOAD_DIR=${POST_COVER_UPLOAD_DIR:-/app/data/post-covers}
+      - LOGGING_LEVEL_ROOT=${LOGGING_LEVEL_ROOT:-INFO}
+    volumes:
+      - ./data/post-covers:/app/data/post-covers
+    mem_limit: 512m
+    depends_on:
+      db-post: { condition: service_started }
+      user-service: { condition: service_started }
+      redis: { condition: service_started }
+      msa-kafka: { condition: service_started }
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8082 || exit 1"]
+      interval: 20s
+      timeout: 8s
+      retries: 6
+      start_period: 120s
+    labels:
+      - "autoheal=true"
+    networks:
+      - msa-network
+
+  # ----- Mail Service (SMTP) -----
+  # .env 의 MAIL_USERNAME, MAIL_PASSWORD 가 env_file 로 컨테이너에 주입됨.
+  # 아래 environment 는 호스트에서 치환되어 동일 값으로 덮어쓰며, 이메일 인증 발송에 사용됨.
+  mail-service:
+    image: ${DOCKER_IMAGE_PREFIX:-local/msa}/mail:${IMAGE_TAG:-latest}
+    build: ./backend/smtp-service
+    container_name: msa-mail
+    expose:
+      - "8083"
+    env_file: .env
+    environment:
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=msa-kafka:9092
+      - MAIL_USERNAME=${MAIL_USERNAME:-}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - JWT_SECRET=${JWT_SECRET:-dev-only-replace-with-strong-secret-in-production}
+    mem_limit: 192m
+    depends_on:
+      msa-kafka: { condition: service_started }
+    networks:
+      - msa-network
+
+  # ----- FastAPI AI (챗봇) -----
+  fastapi-ai:
+    image: ${DOCKER_IMAGE_PREFIX:-local/msa}/ai:${IMAGE_TAG:-latest}
+    build: ./backend/fastapi-ai
+    container_name: msa-ai
+    expose:
+      - "8000"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data/chatbot:/app/data
+    env_file: .env
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256m
+    networks:
+      - msa-network
+
+  # ----- Search Service (FastAPI + pgvector) -----
+  search-service:
+    image: ${DOCKER_IMAGE_PREFIX:-local/msa}/search:${IMAGE_TAG:-latest}
+    build: ./backend/search-service
+    container_name: msa-search
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    expose:
+      - "8010"
+    ports:
+      - "8010:8010"
+    env_file: .env
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=msa-kafka:9092
+      - POSTGRES_HOST=db-search
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${DB_SEARCH_NAME:-mk_search}
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-mink}
+    mem_limit: 256m
+    depends_on:
+      msa-kafka: { condition: service_started }
+      db-search: { condition: service_started }
+    labels:
+      - "autoheal=true"
+    networks:
+      - msa-network
+
+  # ----- Frontend (Next.js) -----
+  frontend:
+    image: ${DOCKER_IMAGE_PREFIX:-local/msa}/frontend:${IMAGE_TAG:-latest}
+    build:
+      context: ./frontend/nextjs-app
+      args:
+        - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+        - NEXT_PUBLIC_MONITOR_URL=${NEXT_PUBLIC_MONITOR_URL:-}
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8085}
+        - NEXT_PUBLIC_AUTH_API_URL=${NEXT_PUBLIC_AUTH_API_URL:-http://localhost:8085}
+        - NEXT_PUBLIC_USER_API_URL=${NEXT_PUBLIC_USER_API_URL:-http://localhost:8085}
+        - NEXT_PUBLIC_POST_API_URL=${NEXT_PUBLIC_POST_API_URL:-http://localhost:8085}
+        - NEXT_PUBLIC_CHATBOT_API_URL=${NEXT_PUBLIC_CHATBOT_API_URL:-http://localhost:8085/chat}
+    container_name: msa-frontend
+    ports:
+      - "3000:3000"
+    # Next SSR(서버 컴포넌트)가 게이트웨이로 요청할 때 localhost 가 아니라 Compose DNS 사용
+    environment:
+      - GATEWAY_INTERNAL_URL=http://api-gateway:8085
+    mem_limit: 128m
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    depends_on:
+      - api-gateway
+    labels:
+      - "autoheal=true"
+    networks:
+      - msa-network
+
+  # ----- Autoheal: unhealthy 컨테이너 자동 재시작 (4GB Lightsail 디스크/메모리 절약) -----
+  autoheal:
+    image: willfarrell/autoheal:latest
+    container_name: msa-autoheal
+    restart: always
+    environment:
+      AUTOHEAL_CONTAINER_LABEL: autoheal
+      # 20분 주기(1200초)로 점검하여 기동 초기 오탐 재시작 방지
+      AUTOHEAL_INTERVAL: 1200
+      # 게이트웨이·JPA 서비스 start_period(90~120s)보다 짧으면 기동 중 재시작 루프 유발 가능
+      AUTOHEAL_START_PERIOD: 150
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    mem_limit: 32m
+    networks:
+      - msa-network
+
+  # ----- Node Exporter (호스트 메트릭 → observe Prometheus 스크래핑) -----
+  # 기동: docker compose --profile monitoring up -d
+  node-exporter:
+    image: prom/node-exporter:v1.7.0
+    container_name: msa-node-exporter
+    restart: unless-stopped
+    pid: "host"
+    ports:
+      - "127.0.0.1:9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    mem_limit: 32m
+    # profiles:
+    #   - monitoring
+    networks:
+      - msa-network
+
+  # ----- 모니터링 (로그 수집만) — observe.minkowskim.com으로 전송 -----
+  # Loki/Grafana는 물리 분리 서버(my-msa-project-monitoring)에서 운영
+  # 기동: docker compose --profile monitoring up -d
+  fluent-bit:
+    image: fluent/fluent-bit:2.2
+    container_name: msa-fluent-bit
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/fluent-bit/fluent-bit-remote.conf:/fluent-bit/etc/fluent-bit.conf
+      - ./monitoring/fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/log:/var/log:ro
+    environment:
+      - FLB_LOG_LEVEL=info
+      - LOKI_HOST=${LOKI_HOST:-observe.minkowskim.com}
+      - LOKI_PORT=${LOKI_PORT:-443}
+    mem_limit: 48m
+    # profiles:
+    #   - monitoring
+    networks:
+      - msa-network
+
+  # ----- Kafka UI (운영에서는 메모리 절약 위해 선택 기동 가능) -----
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: msa-kafka-ui
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: msa-kafka:9092
+    mem_limit: 128m
+    depends_on:
+      - msa-kafka
+    profiles:
+      - tools
+    networks:
+      - msa-network
+
+networks:
+  msa-network:
+    driver: bridge
+
+volumes: {}
