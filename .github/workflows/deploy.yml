@@ -1,4 +1,5 @@
-# push → GitHub Runner 에서 docker compose build/push(GHCR) → SSH 로 서버 .env 동기화 후 pull & up
+# push → GitHub Runner(클라우드)에서 docker compose build/push(GHCR) — 맥/PC 로컬 Docker 빌드와 별개
+#    로컬에서는 git push 만 하면 됨. 이미지는 Actions 가 매 커밋 SHA 태그로 새로 빌드·푸시합니다.
 #
 # Secrets (Repository → Settings → Secrets and variables → Actions):
 #   ENV_VARS   — 프로젝트 루트 .env 와 동일한 다줄 내용 (NEXT_PUBLIC_*, DOCKER_IMAGE_PREFIX, JWT 등)
@@ -116,4 +117,5 @@ jobs:
             export DOCKER_IMAGE_PREFIX="${{ needs.build-and-push.outputs.image_prefix }}"
             export IMAGE_TAG="${{ github.sha }}"
             docker compose pull
-            docker compose up -d --remove-orphans
+            # 레지스트리 최신 레이어 반영 + 컨테이너 재생성(옛 이미지/캐시에 묶인 인스턴스 방지)
+            docker compose up -d --pull always --force-recreate --remove-orphans

@@ -108,7 +108,7 @@ cd ~/my-msa-project-new
 export DOCKER_IMAGE_PREFIX=ghcr.io/minkyeom/msa-standard-template
 export IMAGE_TAG=<원하는_태그_또는_main_빌드_SHA>
 docker compose pull
-docker compose up -d --remove-orphans
+docker compose up -d --pull always --force-recreate --remove-orphans
 ```
 
 `docker compose ps` 에서 이미지 이름이 `ghcr.io/minkyeom/msa-standard-template/...` 형태인지 확인합니다.
@@ -151,8 +151,28 @@ docker system prune -a --volumes -f
 
 ## 7. CI/CD 와 맞추기
 
-`main` 에 push 하면 워크플로가 빌드·푸시 후 서버에서 `git pull` · `IMAGE_TAG=SHA` · `compose pull` · `up` 을 실행합니다.  
-서버 `~/my-msa-project-new` 가 **그 저장소 clone**이고 Secrets(`HOST`, `USERNAME`, `KEY`, `ENV_VARS`)가 맞으면 이후는 자동입니다.
+### 이미지는 어디서 빌드되나
+
+- **맥/PC 로컬 Docker**에서 빌드한 이미지는 **자동으로 서버에 가지 않습니다.**
+- **`git push` → GitHub Actions 러너(클라우드)**에서 `docker compose build`·`push` 로 **GHCR**에 올라가고, 배포 job이 서버에서 **같은 커밋 SHA 태그**로 `pull` · `up` 합니다.
+- 따라서 “최신 이미지로 돌리기” = **코드 수정 후 `main`에 push**(또는 Actions에서 **Re-run**).
+
+### 배포 후 서버에서 디스크·캐시만 정리
+
+프로젝트 루트(예: `~/MSA-Standard-Template`)에서:
+
+```bash
+bash scripts/server-docker-cleanup.sh
+# 스택을 잠시 내리고 예전 이미지까지 비우려면:
+bash scripts/server-docker-cleanup.sh --down-first --aggressive
+```
+
+`--aggressive` 는 **다른 Docker 프로젝트의 미사용 이미지**도 지울 수 있으니, 공유 서버면 주의하세요. **볼륨(DB 데이터)** 은 이 스크립트가 건드리지 않습니다.
+
+### 워크플로 동작 요약
+
+`main` 에 push 하면 빌드·푸시 후 서버에서 `git pull` · `.env`에 `IMAGE_TAG=커밋SHA` 반영 · `compose pull` · **`up --pull always --force-recreate`** 를 실행합니다.  
+서버 경로가 **그 저장소 clone**이고 Secrets(`HOST`, `USERNAME`, `KEY`, `ENV_VARS`, 필요 시 `DEPLOY_PATH`)가 맞으면 이후는 자동입니다.
 
 ---
 
