@@ -8,6 +8,10 @@ Fork this template and build your own production-ready blog with MSA, Kafka, JWT
   <a href="#한국어">한국어</a>
 </p>
 
+## Links & Demo
+- **Live Demo**: [minkowskim.com](https://minkowskim.com/)
+- **Technical Blog**: [minkowskim.com](https://minkowskim.com/)
+
 ## Demo Video
 
 > Place your demo file at `./블로그 실행 영상.mov` (or update the path below).
