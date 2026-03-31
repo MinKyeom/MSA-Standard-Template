@@ -4,7 +4,15 @@
 # Java: -Xms256m -Xmx512m / Kafka KRaft만 사용 (Zookeeper 제거)
 # ============================================================
 
+x-default-logging: &default-logging
+  # 모든 컨테이너 공통 로그 로테이션 (json-file 무한 증식 방지)
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
+
   # ----- API Gateway (유일 진입점, JWT 검증·Trace ID) -----
   api-gateway:
     image: ${DOCKER_IMAGE_PREFIX:-local/msa}/gateway:${IMAGE_TAG:-latest}
@@ -22,13 +30,9 @@ services:
       - JWT_SECRET=${JWT_SECRET:-dev-only-replace-with-strong-secret-in-production}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:4000,http://127.0.0.1:3000,http://127.0.0.1:4000}
     # JVM 힙은 반드시 mem_limit보다 충분히 작게(메타스페이스·직접 메모리·Netty 여유)
-    mem_limit: 512m
+    mem_limit: 448m
     restart: always
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    logging: *default-logging
     depends_on:
       - auth-service
       - user-service
@@ -59,7 +63,8 @@ services:
     ports:
       - "6379:6379"
     restart: always
-    mem_limit: 80m
+    mem_limit: 64m
+    logging: *default-logging
     networks:
       - msa-network
 
@@ -83,7 +88,8 @@ services:
       CLUSTER_ID: 5L6g3nShT-eMCtK--X86sw
       # LogCleaner(SkimpyOffsetMap) 메모리 부족 방지 — apache/kafka 이미지가 사용하는 변수
       KAFKA_HEAP_OPTS: "-Xmx256m -Xms128m"
-    mem_limit: 384m
+    mem_limit: 448m
+    logging: *default-logging
     healthcheck:
       # 공식 이미지: /opt/kafka/bin, KRaft 기동 지연 대비 start_period 여유
       test:
@@ -112,7 +118,8 @@ services:
       - "5434:5432"
     volumes:
       - ./data/auth_db:/var/lib/postgresql/data
-    mem_limit: 175m
+    mem_limit: 128m
+    logging: *default-logging
     networks:
       - msa-network
 
@@ -130,7 +137,8 @@ services:
       - "5432:5432"
     volumes:
       - ./data/user_db:/var/lib/postgresql/data
-    mem_limit: 175m
+    mem_limit: 128m
+    logging: *default-logging
     networks:
       - msa-network
 
@@ -148,7 +156,8 @@ services:
       - "5433:5432"
     volumes:
       - ./data/post_db:/var/lib/postgresql/data
-    mem_limit: 175m
+    mem_limit: 128m
+    logging: *default-logging
     networks:
       - msa-network
 
@@ -166,7 +175,8 @@ services:
       - "5435:5432"
     volumes:
       - ./data/search_db:/var/lib/postgresql/data
-    mem_limit: 175m
+    mem_limit: 128m
+    logging: *default-logging
     networks:
       - msa-network
 
@@ -176,11 +186,7 @@ services:
     build: ./backend/auth-service
     container_name: msa-auth
     restart: always
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    logging: *default-logging
     expose:
       - "8084"
     env_file: .env
@@ -190,14 +196,14 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db-auth:5432/${DB_AUTH_NAME:-mk_auth}
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-mink}
-      - JAVA_OPTS=-Xms128m -Xmx400m
+      - JAVA_OPTS=-Xms128m -Xmx352m
       - JWT_SECRET=${JWT_SECRET:-dev-only-replace-with-strong-secret-in-production}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
       # OAuth 콜백(브라우저→IdP→복귀). 로컬은 게이트웨이 8085. 운영은 Nginx 공개 URL(보통 https://도메인)
       - OAUTH2_REDIRECT_BASE=${OAUTH2_REDIRECT_BASE:-http://localhost:8085}
       - COOKIE_DOMAIN=${COOKIE_DOMAIN:-}
       - LOGGING_LEVEL_ROOT=${LOGGING_LEVEL_ROOT:-INFO}
-    mem_limit: 512m
+    mem_limit: 448m
     depends_on:
       db-auth: { condition: service_started }
       redis: { condition: service_started }
@@ -218,11 +224,7 @@ services:
     build: ./backend/user-service
     container_name: msa-user
     restart: always
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    logging: *default-logging
     expose:
       - "8081"
     env_file: .env
@@ -232,10 +234,10 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db-user:5432/${DB_USER_NAME:-mk_user}
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-mink}
-      - JAVA_OPTS=-Xms128m -Xmx400m
+      - JAVA_OPTS=-Xms128m -Xmx352m
       - JWT_SECRET=${JWT_SECRET:-dev-only-replace-with-strong-secret-in-production}
       - LOGGING_LEVEL_ROOT=${LOGGING_LEVEL_ROOT:-INFO}
-    mem_limit: 512m
+    mem_limit: 448m
     depends_on:
       db-user: { condition: service_started }
       redis: { condition: service_started }
@@ -258,11 +260,7 @@ services:
     build: ./backend/post-service
     container_name: msa-post
     restart: always
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    logging: *default-logging
     expose:
       - "8082"
     env_file: .env
@@ -280,7 +278,7 @@ services:
       - LOGGING_LEVEL_ROOT=${LOGGING_LEVEL_ROOT:-INFO}
     volumes:
       - ./data/post-covers:/app/data/post-covers
-    mem_limit: 512m
+    mem_limit: 576m
     depends_on:
       db-post: { condition: service_started }
       user-service: { condition: service_started }
@@ -311,8 +309,10 @@ services:
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=msa-kafka:9092
       - MAIL_USERNAME=${MAIL_USERNAME:-}
       - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - JAVA_OPTS=-Xms96m -Xmx192m
       - JWT_SECRET=${JWT_SECRET:-dev-only-replace-with-strong-secret-in-production}
-    mem_limit: 192m
+    mem_limit: 256m
+    logging: *default-logging
     depends_on:
       msa-kafka: { condition: service_started }
     networks:
@@ -334,11 +334,8 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - GROQ_API_KEY=${GROQ_API_KEY}
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 256m
+    mem_limit: 192m
+    logging: *default-logging
     networks:
       - msa-network
 
@@ -348,11 +345,7 @@ services:
     build: ./backend/search-service
     container_name: msa-search
     restart: always
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    logging: *default-logging
     expose:
       - "8010"
     ports:
@@ -365,7 +358,7 @@ services:
       - POSTGRES_DB=${DB_SEARCH_NAME:-mk_search}
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-mink}
-    mem_limit: 256m
+    mem_limit: 320m
     depends_on:
       msa-kafka: { condition: service_started }
       db-search: { condition: service_started }
@@ -395,11 +388,7 @@ services:
       - GATEWAY_INTERNAL_URL=http://api-gateway:8085
     mem_limit: 128m
     restart: always
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    logging: *default-logging
     depends_on:
       - api-gateway
     labels:
@@ -420,7 +409,8 @@ services:
       AUTOHEAL_START_PERIOD: 150
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    mem_limit: 32m
+    mem_limit: 24m
+    logging: *default-logging
     networks:
       - msa-network
 
@@ -442,7 +432,8 @@ services:
       - '--path.sysfs=/host/sys'
       - '--path.rootfs=/rootfs'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-    mem_limit: 32m
+    mem_limit: 24m
+    logging: *default-logging
     # profiles:
     #   - monitoring
     networks:
@@ -464,7 +455,8 @@ services:
       - FLB_LOG_LEVEL=info
       - LOKI_HOST=${LOKI_HOST:-observe.minkowskim.com}
       - LOKI_PORT=${LOKI_PORT:-443}
-    mem_limit: 48m
+    mem_limit: 64m
+    logging: *default-logging
     # profiles:
     #   - monitoring
     networks:

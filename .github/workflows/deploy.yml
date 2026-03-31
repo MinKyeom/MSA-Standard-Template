@@ -210,6 +210,7 @@ jobs:
             git fetch origin "${BRANCH}"
             git checkout "${BRANCH}"
             git pull --ff-only origin "${BRANCH}"
+            bash scripts/install-logrotate-rules.sh
             export DOCKER_IMAGE_PREFIX="${{ needs.build-and-push.outputs.image_prefix }}"
             export IMAGE_TAG="${{ github.sha }}"
             # --pull always 로 레지스트리 최신 이미지 확보 + 강제 재생성(별도 pull 생략으로 이중 다운로드 방지)
