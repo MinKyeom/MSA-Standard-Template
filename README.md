@@ -12,7 +12,7 @@ Fork this template and build your own production-ready blog with MSA, Kafka, JWT
 
 > Place your demo file at `./블로그 실행 영상.mov` (or update the path below).
 
-<video src="./블로그 실행 영상.mov" controls loop muted playsinline width="100%"></video>
+<video src="./demo_video.mov" controls loop muted playsinline width="100%"></video>
 
 ---
 
