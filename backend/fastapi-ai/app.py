@@ -13,7 +13,13 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from db_utils import init_db, save_info, retrieve_context
 from memory import set_session_data, get_session_data, append_chat_history, get_chat_history, clear_session
 from schemas import ChatPayload, AgentActionSchema
-from prompts.chat_prompts import GITHUB_INFO, AGENT_SYSTEM_TEMPLATE
+from prompts.chat_prompts import (
+    AGENT_SYSTEM_TEMPLATE,
+    GITHUB_INFO,
+    LANG_REPLY_AMBIGUOUS,
+    LANG_REPLY_ENGLISH_ONLY,
+    LANG_REPLY_KOREAN_ONLY,
+)
 
 
 def _cors_allowed_origins():
@@ -69,18 +75,21 @@ def _parse_agent_json(raw: str) -> AgentActionSchema | None:
         return None
 
 
+def _has_hangul(message: str) -> bool:
+    return any("\uac00" <= c <= "\ud7a3" for c in message)
+
+
 def _language_instruction(message: str) -> str:
-    """사용자 입력이 라틴 위주면 영어, 그 외는 한국어로 답하도록 지시."""
+    """한글이 있으면 한국어 전용, 그 외 라틴 위주면 영어 전용. 한자·일본어 혼입 금지 지시."""
     letters = [c for c in message if c.isalpha()]
     if not letters:
-        return (
-            "Match the user's language (Korean or English). "
-            "If the message is too short to tell, prefer Korean."
-        )
+        return LANG_REPLY_AMBIGUOUS
+    if _has_hangul(message):
+        return LANG_REPLY_KOREAN_ONLY
     ascii_ratio = sum(1 for c in letters if ord(c) < 128) / len(letters)
     if ascii_ratio >= 0.85:
-        return "The user is writing primarily in English. You MUST respond entirely in natural English."
-    return "The user is writing primarily in Korean. You MUST respond entirely in natural Korean."
+        return LANG_REPLY_ENGLISH_ONLY
+    return LANG_REPLY_KOREAN_ONLY
 
 
 # 초기화
@@ -206,7 +215,9 @@ async def chat_endpoint(payload: ChatPayload):
         try:
             sys_msg = SystemMessage(
                 content=(
-                    "You are MinKowskiM's site assistant. Answer clearly and concisely. "
+                    "You are MinKowskiM's site assistant. Answer clearly and concisely in plain text. "
+                    "Follow the language rules exactly (one language only; no Chinese or Japanese "
+                    "characters unless inside a URL or code). "
                     + lang_instruction
                 )
             )
