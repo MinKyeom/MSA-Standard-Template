@@ -174,6 +174,8 @@ Access:
 - Frontend: `http://localhost:3000`
 - Gateway: `http://localhost:8085`
 
+`scripts/local-up.sh` sets `COMPOSE_FILE=docker-compose.yml:docker-compose.local.yml` so dev ports are published. Production: set `COMPOSE_PROFILES=edge` in server `.env`, stop host `nginx`, mount host `/etc/letsencrypt` — see `docs/Nginx-운영-가이드.md`.
+
 ### `.env.example` (Required Variables)
 
 ```bash
@@ -374,8 +376,9 @@ bash scripts/init-env.sh
 bash scripts/local-up.sh
 ```
 
-- 서비스: `http://localhost:3000`
-- 게이트웨이: `http://localhost:8085`
+- `local-up.sh`는 `docker-compose.yml` + `docker-compose.local.yml`을 묶어 **프론트·게이트웨이 등 포트를 호스트에 공개**합니다(내장 Nginx 없이 개발하기 위함).
+- 서비스: `http://localhost:3000` · 게이트웨이: `http://localhost:8085`
+- **운영 서버**: `.env`에 `COMPOSE_PROFILES=edge` 후 `docker compose up`(또는 CI 배포). **80/443**은 `reverse-proxy` 컨테이너가 담당하며, 호스트 **systemctl nginx**는 끄고 `/etc/letsencrypt`를 마운트합니다. 자세한 절차는 `docs/Nginx-운영-가이드.md` 참고.
 
 ### 환경 변수 (`.env.example`)
 

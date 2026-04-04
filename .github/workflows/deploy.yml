@@ -1,8 +1,8 @@
 # push → GitHub Runner(클라우드)에서 docker compose build/push(GHCR) — 맥/PC 로컬 Docker 빌드와 별개
 #    로컬에서는 git push 만 하면 됨. 이미지는 Actions 가 매 커밋 SHA 태그로 새로 빌드·푸시합니다.
 #
-# 호스트 Nginx(nginx/msa-project.conf.template)는 Docker Compose 에 포함되지 않음.
-#    git pull 후 서버에서 ./scripts/render-nginx.sh → 설정 복사·nginx -t && sudo systemctl reload nginx
+# 공개 80/443 은 Compose 의 reverse-proxy(프로필 edge) + 호스트 /etc/letsencrypt 마운트.
+#    서버 .env 에 COMPOSE_PROFILES=edge 포함(워크플로가 비어 있을 때 자동 추가). 호스트 systemctl nginx 는 중지 후 사용.
 #
 # Secrets (Repository → Settings → Secrets and variables → Actions):
 #   ENV_VARS   — 프로젝트 루트 .env 와 동일한 다줄 내용 (NEXT_PUBLIC_*, DOCKER_IMAGE_PREFIX, JWT 등)
@@ -34,7 +34,7 @@ on:
   workflow_dispatch:
     inputs:
       build_mode:
-        description: "partial = 변경분만 빌드(기본), full = 앱 이미지 8개 전부 빌드"
+        description: "partial = 변경분만 빌드(기본), full = 앱 이미지+nginx(reverse-proxy) 전부 빌드"
         type: choice
         required: true
         default: partial
@@ -93,6 +93,7 @@ jobs:
           printf '%s\n' "$ENV_VARS" > .env.build
           echo "DOCKER_IMAGE_PREFIX=${{ steps.meta.outputs.prefix }}" >> .env.build
           echo "IMAGE_TAG=${{ github.sha }}" >> .env.build
+          grep -q '^COMPOSE_PROFILES=' .env.build || echo "COMPOSE_PROFILES=edge" >> .env.build
           # compose.yml 의 env_file: .env 때문에 push 시 루트 .env 가 필요함(러너에는 없음 → 동일 내용 복사)
           cp .env.build .env
 
@@ -107,6 +108,7 @@ jobs:
 
       - name: 선택적 빌드 및 GHCR 푸시
         env:
+          COMPOSE_PROFILES: edge
           DOCKER_BUILDKIT: "1"
           COMPOSE_DOCKER_CLI_BUILD: "1"
           GITHUB_EVENT_NAME: ${{ github.event_name }}
@@ -172,6 +174,7 @@ jobs:
           printf '%s\n' "$ENV_VARS" > .env.deploy.tmp
           echo "DOCKER_IMAGE_PREFIX=${{ needs.build-and-push.outputs.image_prefix }}" >> .env.deploy.tmp
           echo "IMAGE_TAG=${{ github.sha }}" >> .env.deploy.tmp
+          grep -q '^COMPOSE_PROFILES=' .env.deploy.tmp || echo "COMPOSE_PROFILES=edge" >> .env.deploy.tmp
           bash scripts/merge-ci-env-overrides.sh .env.deploy.tmp
 
       - name: .env 서버로 복사

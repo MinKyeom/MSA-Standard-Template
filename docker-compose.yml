@@ -2,6 +2,9 @@
 # MSA 블로그 플랫폼 — 운영 (4GB Lightsail)
 # 원칙: 전체 컨테이너 메모리 합 4GB 초과 금지, 모든 서비스 mem_limit 설정
 # Java: -Xms256m -Xmx512m / Kafka KRaft만 사용 (Zookeeper 제거)
+#
+# 공개 진입: 프로필 edge 의 reverse-proxy(80/443). 서버 .env 에 COMPOSE_PROFILES=edge 필요.
+# DB·Redis·Kafka 등은 127.0.0.1 로만 바인딩(외부 직접 노출 축소). 로컬 개발은 docker-compose.local.yml 참고.
 # ============================================================
 
 x-default-logging: &default-logging
@@ -20,8 +23,6 @@ services:
     container_name: msa-gateway
     expose:
       - "8085"
-    ports:
-      - "8085:8085"
     env_file: .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
@@ -61,7 +62,7 @@ services:
     container_name: msa-redis
     command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     restart: always
     mem_limit: 64m
     logging: *default-logging
@@ -74,8 +75,8 @@ services:
     image: apache/kafka:3.7.0
     container_name: msa-kafka
     ports:
-      - "9092:9092"
-      - "9093:9093"
+      - "127.0.0.1:9092:9092"
+      - "127.0.0.1:9093:9093"
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
@@ -115,7 +116,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mink}
     ports:
-      - "5434:5432"
+      - "127.0.0.1:5434:5432"
     volumes:
       - ./data/auth_db:/var/lib/postgresql/data
     mem_limit: 128m
@@ -134,7 +135,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mink}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - ./data/user_db:/var/lib/postgresql/data
     mem_limit: 128m
@@ -153,7 +154,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mink}
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - ./data/post_db:/var/lib/postgresql/data
     mem_limit: 128m
@@ -172,7 +173,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mink}
     ports:
-      - "5435:5432"
+      - "127.0.0.1:5435:5432"
     volumes:
       - ./data/search_db:/var/lib/postgresql/data
     mem_limit: 128m
@@ -325,8 +326,6 @@ services:
     container_name: msa-ai
     expose:
       - "8000"
-    ports:
-      - "8000:8000"
     volumes:
       - ./data/chatbot:/app/data
     env_file: .env
@@ -348,8 +347,6 @@ services:
     logging: *default-logging
     expose:
       - "8010"
-    ports:
-      - "8010:8010"
     env_file: .env
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=msa-kafka:9092
@@ -381,8 +378,8 @@ services:
         - NEXT_PUBLIC_POST_API_URL=${NEXT_PUBLIC_POST_API_URL:-http://localhost:8085}
         - NEXT_PUBLIC_CHATBOT_API_URL=${NEXT_PUBLIC_CHATBOT_API_URL:-http://localhost:8085/chat}
     container_name: msa-frontend
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     # Next SSR(서버 컴포넌트)가 게이트웨이로 요청할 때 localhost 가 아니라 Compose DNS 사용
     environment:
       - GATEWAY_INTERNAL_URL=http://api-gateway:8085
@@ -393,6 +390,37 @@ services:
       - api-gateway
     labels:
       - "autoheal=true"
+    networks:
+      - msa-network
+
+  # ----- 공개 Reverse Proxy (TLS 종료, 80/443) — 프로필 edge + 서버 .env 의 COMPOSE_PROFILES=edge -----
+  reverse-proxy:
+    image: ${DOCKER_IMAGE_PREFIX:-local/msa}/nginx:${IMAGE_TAG:-latest}
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: msa-nginx
+    profiles:
+      - edge
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    env_file: .env
+    environment:
+      UPSTREAM_GATEWAY: api-gateway:8085
+      UPSTREAM_FRONTEND: frontend:3000
+      NODE_EXPORTER_UPSTREAM: node-exporter:9100
+      DEV_UPSTREAM_GATEWAY: api-gateway:8085
+      DEV_UPSTREAM_FRONTEND: frontend:3000
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    mem_limit: 96m
+    logging: *default-logging
+    depends_on:
+      - api-gateway
+      - frontend
+      - node-exporter
     networks:
       - msa-network
 
@@ -467,7 +495,7 @@ services:
     image: provectuslabs/kafka-ui:latest
     container_name: msa-kafka-ui
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: msa-kafka:9092

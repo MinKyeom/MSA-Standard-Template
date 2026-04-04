@@ -1,0 +1,107 @@
+# NGINX_ENABLE_DEV_SERVER=1 일 때만 10-main 에 이어 붙임
+
+server {
+    listen ${NGINX_HTTP_PORT};
+    server_name ${DEV_DOMAIN};
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen ${NGINX_HTTPS_PORT} ssl;
+    server_name ${DEV_DOMAIN};
+
+    ssl_certificate ${DEV_SSL_CERT};
+    ssl_certificate_key ${DEV_SSL_KEY};
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    client_max_body_size 32M;
+
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Cookie $http_cookie;
+    proxy_pass_header Set-Cookie;
+
+    location / {
+        proxy_pass http://${DEV_UPSTREAM_FRONTEND};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+    }
+
+    location /user/ {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://${DEV_UPSTREAM_GATEWAY};
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    location /auth/ {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://${DEV_UPSTREAM_GATEWAY};
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    location /api/posts {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://${DEV_UPSTREAM_GATEWAY};
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    location /api/post-drafts {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://${DEV_UPSTREAM_GATEWAY};
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    location /api/search {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://${DEV_UPSTREAM_GATEWAY};
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    location /api/gateway-proxy {
+        proxy_pass http://${DEV_UPSTREAM_FRONTEND};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    location /api/ {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://${DEV_UPSTREAM_GATEWAY};
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    location /actuator {
+        proxy_pass http://${DEV_UPSTREAM_GATEWAY};
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_connect_timeout 10s;
+        proxy_read_timeout 10s;
+    }
+
+    location /chat {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://${DEV_UPSTREAM_GATEWAY};
+        proxy_connect_timeout 600s;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+    }
+}

@@ -20,6 +20,33 @@ CHAT="${CHAT:-}"
 if [ -n "$SITE" ]; then
   remove_key "NEXT_PUBLIC_SITE_URL"
   echo "NEXT_PUBLIC_SITE_URL=$SITE" >> "$f"
+
+  # Nginx(reverse-proxy): PRIMARY / SSL 이 ENV_VARS 에 없으면 PUBLIC_SITE_URL 기준으로 채움
+  if [[ "$SITE" == *://* ]]; then
+    if ! grep -q '^PRIMARY_SERVER_NAMES=' "$f"; then
+      hp="${SITE#*://}"
+      hp="${hp%%/*}"
+      hp="${hp%%:*}"
+      if [ -n "$hp" ]; then
+        case "$hp" in
+          www.*)
+            ap="${hp#www.}"
+            echo "PRIMARY_SERVER_NAMES=${hp} ${ap}" >> "$f"
+            ;;
+          *)
+            echo "PRIMARY_SERVER_NAMES=${hp} www.${hp}" >> "$f"
+            ;;
+        esac
+      fi
+    fi
+    if ! grep -q '^SSL_CERT_PATH=' "$f"; then
+      first=$(grep '^PRIMARY_SERVER_NAMES=' "$f" | head -1 | cut -d= -f2- | awk '{print $1}')
+      if [ -n "$first" ]; then
+        echo "SSL_CERT_PATH=/etc/letsencrypt/live/${first}/fullchain.pem" >> "$f"
+        echo "SSL_KEY_PATH=/etc/letsencrypt/live/${first}/privkey.pem" >> "$f"
+      fi
+    fi
+  fi
 fi
 
 if [ -n "$API" ]; then

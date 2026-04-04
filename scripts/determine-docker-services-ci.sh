@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # CI: 변경 파일에 따라 docker compose 서비스 목록 또는 ALL / RETAG 출력.
-#   ALL  — 8개 이미지 전부 빌드
-#   RETAG — 빌드 없이 이전 SHA 태그만 새 SHA로 복사(nginx·문서성 스크립트만 바뀐 경우)
+#   ALL  — 앱 이미지 + reverse-proxy(nginx) 전부 빌드
+#   RETAG — 빌드 없이 이전 SHA 태그만 새 SHA로 복사(문서만 바뀐 경우 등)
 #   그 외 — 빌드할 compose 서비스 이름을 공백 구분으로 한 줄
 #
 # 인자: <before_sha> <after_sha>
@@ -53,9 +53,15 @@ append_svc() {
 }
 
 for f in "${files[@]}"; do
+  if [[ "$f" == nginx/* ]]; then
+    only_retag=0
+    append_svc reverse-proxy
+    continue
+  fi
   # 이미지에 영향 없음 → 이번 커밋만으로는 RETAG 후보
-  if [[ "$f" == nginx/* ]] || [[ "$f" == scripts/* ]] || [[ "$f" == monitoring/* ]] \
+  if [[ "$f" == scripts/* ]] || [[ "$f" == monitoring/* ]] \
     || [[ "$f" == .env.example ]] || [[ "$f" == .gitignore ]] \
+    || [[ "$f" == docker-compose.local.yml ]] \
     || [[ "$f" == *".md" ]] || [[ "$f" == *".markdown" ]] || [[ "$f" == LICENSE ]]; then
     continue
   fi

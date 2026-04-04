@@ -26,6 +26,7 @@ suffix_for() {
     fastapi-ai) echo ai ;;
     search-service) echo search ;;
     frontend) echo frontend ;;
+    reverse-proxy) echo nginx ;;
     *) echo "" ;;
   esac
 }
@@ -39,7 +40,7 @@ is_built() {
   return 1
 }
 
-ALL_SVCS=(api-gateway auth-service user-service post-service mail-service fastapi-ai search-service frontend)
+ALL_SVCS=(api-gateway auth-service user-service post-service mail-service fastapi-ai search-service frontend reverse-proxy)
 
 for svc in "${ALL_SVCS[@]}"; do
   if is_built "$svc"; then

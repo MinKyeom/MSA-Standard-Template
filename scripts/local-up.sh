@@ -4,6 +4,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 "$ROOT/scripts/init-env.sh"
 cd "$ROOT"
+# 게이트웨이·DB 등 호스트 포트 노출(프로필 edge 없이 개발) — 운영은 COMPOSE_PROFILES=edge 만 쓰고 이 파일은 쓰지 않음
+export COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml:docker-compose.local.yml}"
 export DOCKER_IMAGE_PREFIX="${DOCKER_IMAGE_PREFIX:-local/msa}"
 export IMAGE_TAG="${IMAGE_TAG:-latest}"
 export DOCKER_BUILDKIT="${DOCKER_BUILDKIT:-1}"

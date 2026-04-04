@@ -1,0 +1,126 @@
+# envsubst 변수: scripts/render-nginx.sh · nginx/docker-entrypoint.sh 와 동일 목록
+
+server {
+    listen ${NGINX_HTTP_PORT};
+    server_name ${PRIMARY_SERVER_NAMES};
+    return 301 https://$host$request_uri;
+}
+
+upstream msa-gateway {
+    server ${UPSTREAM_GATEWAY};
+    keepalive 8;
+}
+
+server {
+    listen ${NGINX_HTTPS_PORT} ssl;
+    server_name ${PRIMARY_SERVER_NAMES};
+
+    ssl_certificate ${SSL_CERT_PATH};
+    ssl_certificate_key ${SSL_KEY_PATH};
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    client_max_body_size 32M;
+
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Cookie $http_cookie;
+    proxy_pass_header Set-Cookie;
+    proxy_set_header Origin $http_origin;
+    proxy_set_header Access-Control-Request-Method $http_access_control_request_method;
+    proxy_set_header Access-Control-Request-Headers $http_access_control_request_headers;
+
+    location / {
+        proxy_pass http://${UPSTREAM_FRONTEND};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_cache_bypass $http_upgrade;
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    location /user/ {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://msa-gateway;
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    location /auth/ {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://msa-gateway;
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    location /api/posts {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://msa-gateway;
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    location /api/post-drafts {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://msa-gateway;
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    location /api/search {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://msa-gateway;
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    location /api/gateway-proxy {
+        proxy_pass http://${UPSTREAM_FRONTEND};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    location /api/ {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://msa-gateway;
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    location /actuator {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://msa-gateway;
+        proxy_connect_timeout 10s;
+        proxy_read_timeout 10s;
+    }
+
+    location /chat {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://msa-gateway;
+        proxy_connect_timeout 600s;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+    }
+
+    # Docker: Compose 서비스 node-exporter / 호스트 Nginx: 127.0.0.1:9100
+    location /metrics/node {
+        allow ${METRICS_ALLOW_IP};
+        deny all;
+        proxy_pass http://${NODE_EXPORTER_UPSTREAM}/metrics;
+        proxy_http_version 1.1;
+    }
+}

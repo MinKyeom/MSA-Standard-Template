@@ -13,7 +13,11 @@
 | GHCR | 이미지가 private이면 서버에서 `docker login ghcr.io` |
 | 서버 | Docker / Docker Compose v2 / Git 설치 |
 
-CI는 **Nginx를 설치·설정하지 않습니다.** 컨테이너만 `pull` · `up` 합니다. 도메인·HTTPS는 **서버 호스트의 Nginx**(또는 다른 리버스 프록시)에서 아래 절차로 맞춥니다.
+CI는 **호스트에 Nginx 패키지를 설치하지는 않습니다.** 대신 Compose **`reverse-proxy` 서비스(프로필 `edge`)** 가 **80/443** 을 열고, 호스트의 **`/etc/letsencrypt` 를 읽기 전용으로 마운트**해 TLS를 종료합니다. 서버 `.env`(또는 `ENV_VARS`)에 **`COMPOSE_PROFILES=edge`** 가 필요합니다(Actions 가 없으면 배포용 `.env` 에 `edge` 를 붙입니다). **`PRIMARY_SERVER_NAMES`·`SSL_*`** 는 명시하지 않아도, **`NEXT_PUBLIC_SITE_URL`/`FRONTEND_URL`**(또는 Actions Variables 의 `PUBLIC_SITE_URL` → `merge-ci-env-overrides.sh`)로 **reverse-proxy 컨테이너 entrypoint** 가 Let’s Encrypt 경로를 맞춥니다. 다만 **명시해 두는 편이 가장 확실**합니다.
+
+**최초 전환 시:** 호스트에서 `sudo systemctl stop nginx` · `sudo systemctl disable nginx` 로 **기존 80/443 점유를 해제**한 뒤 `docker compose up -d` 하세요. 인증서는 기존과 같이 호스트에서 **certbot** 등으로 갱신하면 됩니다(컨테이너는 마운트로 즉시 반영).
+
+**레거시:** 호스트 `/etc/nginx` 만 쓰는 방식은 아래 절차(템플릿·`render-nginx.sh`·`systemctl reload nginx`)로 유지할 수 있습니다. 템플릿 원본은 `nginx/templates/*.template` 입니다.
 
 ---
 
@@ -33,7 +37,8 @@ CI는 **Nginx를 설치·설정하지 않습니다.** 컨테이너만 `pull` · 
 
 | 경로 | 역할 |
 |------|------|
-| `nginx/msa-project.conf.template` | `${NGINX_HTTP_PORT}` 같은 **플레이스홀더**만 있는 원본. 그대로는 nginx에 넣지 않음. |
+| `nginx/templates/10-main.conf.template` · `20-dev.conf.template` | `${PRIMARY_SERVER_NAMES}` 등 **플레이스홀더** 원본. Docker `reverse-proxy` 가 기동 시 `envsubst` 처리. |
+| `nginx/msa-project.conf.template` | 위 분리 구조 안내용(짧은 주석). |
 | `nginx/.env.nginx.example` | 치환에 쓸 변수 예시. 복사해 `nginx/.env.nginx` 로 쓰면 됨(`.gitignore` 권장). |
 | `scripts/render-nginx.sh` | `envsubst`로 템플릿을 읽어 **실제 nginx 문법의 한 파일**로 출력. |
 | 출력 기본값 | `nginx/msa-project.rendered.conf` (저장소 루트 `.gitignore`에 있음) |
@@ -46,7 +51,7 @@ CI는 **Nginx를 설치·설정하지 않습니다.** 컨테이너만 `pull` · 
 
 ### 4.1 사전 준비
 
-1. `docker compose up -d` 로 **프론트(3000)·게이트웨이(8085)** 가 호스트의 `127.0.0.1` 에 떠 있는지 확인(compose 기본 포트 publish 가정).
+1. **호스트 전용 Nginx**를 쓸 때: `docker compose` + `docker-compose.local.yml` 로 **프론트(3000)·게이트웨이(8085)** 가 호스트에 publish 되는지 확인하거나, **Docker `reverse-proxy`만** 쓸 때는 컨테이너 간 네트워크로만 붙습니다.
 2. `sudo apt-get install -y nginx gettext-base`
 3. Let’s Encrypt 사용 시: `certbot` 으로 인증서 발급 후  
    `/etc/letsencrypt/options-ssl-nginx.conf`, `ssl-dhparams.pem` 존재 여부 확인(없으면 `certbot --nginx` 등으로 생성).

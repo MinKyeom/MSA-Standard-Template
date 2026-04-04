@@ -89,6 +89,11 @@ coverage.xml
 # ----- Nginx 렌더 결과·레거시 단일 파일(개인 도메인 등) -----
 nginx/msa-project.rendered.conf
 nginx/msa-project
+# 로컬 TLS 실험(저장소에 키·인증서 커밋 금지)
+nginx/certs/
+nginx/*.crt
+nginx/*.key
+!nginx/.env.nginx.example
 
 # ----- 기타 -----
 *.orig

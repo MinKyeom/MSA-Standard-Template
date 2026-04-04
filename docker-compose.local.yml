@@ -1,0 +1,39 @@
+# 로컬 개발: 호스트에서 게이트웨이·프론트·DB 포트에 직접 붙을 때 사용 (SSL 없이 테스트)
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d
+# 운영 서버는 프로필 edge + COMPOSE_PROFILES=edge 만 쓰고 이 파일은 쓰지 않습니다.
+
+services:
+  api-gateway:
+    ports:
+      - "8085:8085"
+  frontend:
+    ports:
+      - "3000:3000"
+  fastapi-ai:
+    ports:
+      - "8000:8000"
+  search-service:
+    ports:
+      - "8010:8010"
+  redis:
+    ports:
+      - "6379:6379"
+  msa-kafka:
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+  db-auth:
+    ports:
+      - "5434:5432"
+  db-user:
+    ports:
+      - "5432:5432"
+  db-post:
+    ports:
+      - "5433:5432"
+  db-search:
+    ports:
+      - "5435:5432"
+  kafka-ui:
+    ports:
+      - "8080:8080"
