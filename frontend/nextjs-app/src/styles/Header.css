@@ -1,12 +1,56 @@
 /* src/styles/Header.css */
 
+.header-sticky-stack {
+  position: sticky;
+  top: 0;
+  z-index: 900;
+}
+
+.session-expiry-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  background: linear-gradient(90deg, #fff3e0, #ffe0b2);
+  color: #5d4037;
+  border-bottom: 1px solid #ffcc80;
+  text-align: center;
+}
+
+body.dark-mode .session-expiry-banner {
+  background: linear-gradient(90deg, #3e2723, #4e342e);
+  color: #ffccbc;
+  border-bottom-color: #5d4037;
+}
+
+.session-expiry-banner__extend {
+  padding: 4px 12px;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  border: 1px solid #e65100;
+  background: #fff;
+  color: #bf360c;
+  cursor: pointer;
+}
+
+.session-expiry-banner__extend:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+body.dark-mode .session-expiry-banner__extend {
+  background: #6d4c41;
+  color: #ffe0b2;
+  border-color: #ffab91;
+}
+
 .main-header {
   background-color: var(--color-primary);
   border-bottom: 1px solid var(--color-border);
   padding: 10px 15px;
-  position: sticky;
-  top: 0;
-  z-index: 900;
   box-shadow: 0 2px 5px var(--color-shadow);
 }
 

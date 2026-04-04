@@ -12,12 +12,32 @@ export default function Chatbot({ setIsChatOpen }) {
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   
-  const { id: currentUserId, nickname: currentUserNickname } = useAuth();
+  const { id: currentUserId, nickname: currentUserNickname, isAuthenticated } = useAuth();
   // 비로그인 시 'guest_user' 사용을 원칙으로 유지
   const sessionId = currentUserId || "guest_user"; 
 
   const messagesEndRef = useRef(null);
-  
+  const prevUserIdRef = useRef(currentUserId);
+
+  // 로그인/로그아웃 시 세션·UI가 바뀌면 대화 목록 초기화
+  useEffect(() => {
+    if (prevUserIdRef.current !== currentUserId) {
+      prevUserIdRef.current = currentUserId;
+      setMessages([]);
+    }
+  }, [currentUserId]);
+
+  useEffect(() => {
+    const onSessionEnded = () => {
+      setMessages([]);
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("auth:session-ended", onSessionEnded);
+      return () => window.removeEventListener("auth:session-ended", onSessionEnded);
+    }
+    return undefined;
+  }, []);
+
   // 메시지가 추가될 때마다 스크롤을 맨 아래로 이동
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -80,7 +100,7 @@ export default function Chatbot({ setIsChatOpen }) {
               Ask questions or jot down notes and ideas.
             </div>
             <div className="chatbot-welcome-body">
-              {currentUserId ? (
+              {isAuthenticated && currentUserId ? (
                 <>
                   <span className="chatbot-welcome-badge">Signed in</span>{" "}
                   Connected as <strong>{currentUserNickname || currentUserId}</strong>.

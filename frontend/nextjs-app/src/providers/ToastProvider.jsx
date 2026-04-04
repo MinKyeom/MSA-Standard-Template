@@ -35,7 +35,7 @@ const getIcon = (type) => {
 
 // 헬퍼 컴포넌트: 단일 토스트 아이템
 // ⭐ 수정 1: forwardRef로 컴포넌트를 감싸 ref를 받을 준비
-const ToastItem = forwardRef(({ message, type, id, onDismiss }, ref) => {
+const ToastItem = forwardRef(({ message, type, id, onDismiss, durationMs }, ref) => {
   const bgColor = {
     success: "#4CAF50",
     error: "#F44336",
@@ -44,13 +44,13 @@ const ToastItem = forwardRef(({ message, type, id, onDismiss }, ref) => {
   };
 
   useEffect(() => {
-    // 4초 후 자동으로 닫히도록 설정
+    const ms = typeof durationMs === "number" && durationMs > 0 ? durationMs : 4000;
     const timer = setTimeout(() => {
       onDismiss(id);
-    }, 4000);
+    }, ms);
 
-    return () => clearTimeout(timer); // 클린업 함수
-  }, [id, onDismiss]);
+    return () => clearTimeout(timer);
+  }, [id, onDismiss, durationMs]);
 
   return (
     // ⭐ 수정 2: ref를 div에 연결
@@ -80,8 +80,8 @@ export const ToastProvider = ({ children }) => {
   }, []);
 
   // 토스트를 띄우는 함수
-  const showToast = useCallback(({ message, type = "info" }) => {
-    const newToast = { id: nextId++, message, type };
+  const showToast = useCallback(({ message, type = "info", durationMs }) => {
+    const newToast = { id: nextId++, message, type, durationMs };
     // 최신 토스트가 위에 표시되도록 prepend (배열 앞에 추가)
     setToasts((prev) => [newToast, ...prev]); 
   }, []);
@@ -116,9 +116,10 @@ export const ToastProvider = ({ children }) => {
                     nodeRef={nodeRef} // ⭐ nodeRef 전달
                   >
                     <ToastItem
-                      message={toast.message} 
+                      message={toast.message}
                       type={toast.type}
                       id={toast.id}
+                      durationMs={toast.durationMs}
                       onDismiss={dismissToast}
                       ref={nodeRef} // ⭐ ToastItem에 ref prop으로 전달
                     />

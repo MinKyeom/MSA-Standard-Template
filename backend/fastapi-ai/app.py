@@ -1,6 +1,19 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import os, json, traceback
+import json
+import os
+import re
+import traceback
+
+from langchain_groq import ChatGroq
+from langchain_core.prompts import PromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.messages import SystemMessage, HumanMessage
+
+from db_utils import init_db, save_info, retrieve_context
+from memory import set_session_data, get_session_data, append_chat_history, get_chat_history, clear_session
+from schemas import ChatPayload, AgentActionSchema
+from prompts.chat_prompts import GITHUB_INFO, AGENT_SYSTEM_TEMPLATE
 
 
 def _cors_allowed_origins():
@@ -21,14 +34,54 @@ def _cors_allowed_origins():
         if d not in out:
             out.append(d)
     return out
-from langchain_groq import ChatGroq
-from langchain_core.prompts import PromptTemplate 
-from langchain_core.output_parsers import PydanticOutputParser 
 
-from db_utils import init_db, save_info, retrieve_context
-from memory import set_session_data, get_session_data, append_chat_history, get_chat_history, clear_session
-from schemas import ChatPayload, AgentActionSchema
-from prompts.chat_prompts import GITHUB_INFO, AGENT_SYSTEM_TEMPLATE
+
+def _strip_code_fence(text: str) -> str:
+    t = text.strip()
+    if t.startswith("```"):
+        t = re.sub(r"^```(?:json)?\s*", "", t, flags=re.IGNORECASE)
+        t = re.sub(r"\s*```$", "", t)
+    return t.strip()
+
+
+def _parse_agent_json(raw: str) -> AgentActionSchema | None:
+    """Groq 응답이 마크다운/앞뒤 문장을 섞어도 첫 JSON 객체를 꺼내 검증한다."""
+    t = _strip_code_fence(raw)
+    start = t.find("{")
+    if start < 0:
+        return None
+    depth = 0
+    end = -1
+    for i, c in enumerate(t[start:], start=start):
+        if c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+            if depth == 0:
+                end = i + 1
+                break
+    if end < 0:
+        return None
+    try:
+        data = json.loads(t[start:end])
+        return AgentActionSchema.model_validate(data)
+    except Exception:
+        return None
+
+
+def _language_instruction(message: str) -> str:
+    """사용자 입력이 라틴 위주면 영어, 그 외는 한국어로 답하도록 지시."""
+    letters = [c for c in message if c.isalpha()]
+    if not letters:
+        return (
+            "Match the user's language (Korean or English). "
+            "If the message is too short to tell, prefer Korean."
+        )
+    ascii_ratio = sum(1 for c in letters if ord(c) < 128) / len(letters)
+    if ascii_ratio >= 0.85:
+        return "The user is writing primarily in English. You MUST respond entirely in natural English."
+    return "The user is writing primarily in Korean. You MUST respond entirely in natural Korean."
+
 
 # 초기화
 init_db()
@@ -44,10 +97,15 @@ app.add_middleware(
 
 # 환경 변수 및 설정
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "1234") # 기본값 1234
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "1234")  # 기본값 1234
 
 try:
-    llm = ChatGroq(model="llama-3.3-70b-versatile", groq_api_key=GROQ_API_KEY, temperature=0.2) if GROQ_API_KEY else None
+    _groq_model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    llm = (
+        ChatGroq(model=_groq_model, groq_api_key=GROQ_API_KEY, temperature=0.2)
+        if GROQ_API_KEY
+        else None
+    )
 except Exception as e:
     print(f"LLM 로드 에러: {e}")
     llm = None
@@ -71,21 +129,22 @@ async def chat_endpoint(payload: ChatPayload):
         if msg.strip() == ADMIN_PASSWORD:
             pending = session.get("pending_data")
             if pending:
-                save_info(pending['category'], pending['value'])
+                save_info(pending["category"], pending["value"])
                 response_text = f"✅ 본인 확인 완료! 요청하신 내용을 기억했습니다: {pending['value']}"
             else:
                 response_text = "✅ 본인 확인이 완료되었습니다. 이제 자유롭게 이용하세요."
-            
+
             session.update({"user_verified": True, "is_verifying": False, "pending_data": None})
             set_session_data(session_id, session)
         else:
-            if "취소" in msg:
+            low = msg.strip().lower()
+            if "취소" in msg or low in ("cancel", "abort", "stop"):
                 session.update({"is_verifying": False, "pending_data": None})
                 set_session_data(session_id, session)
                 response_text = "인증이 취소되었습니다."
             else:
                 response_text = "❌ 비밀번호가 틀렸습니다. 다시 입력하시거나 '취소'를 입력해주세요."
-        
+
         append_chat_history(session_id, "AI", response_text)
         return {"response": response_text}
 
@@ -95,45 +154,78 @@ async def chat_endpoint(payload: ChatPayload):
 
     history_list = get_chat_history(session_id)
     history_text = "\n".join(history_list) if history_list else "이전 대화 없음"
-    context_text = retrieve_context(msg) # DB 정보 우선 참조
+    context_text = retrieve_context(msg)  # DB 정보 우선 참조
 
-    parser = PydanticOutputParser(pydantic_object=AgentActionSchema)
+    lang_instruction = _language_instruction(msg)
     agent_prompt = PromptTemplate(
         template=AGENT_SYSTEM_TEMPLATE,
-        input_variables=["history", "context", "message", "github_info"],
-        partial_variables={"format_instructions": parser.get_format_instructions()}
+        input_variables=["history", "context", "message", "github_info", "lang_instruction"],
     )
 
     try:
-        agent_chain = agent_prompt | llm | parser
-        action_result = agent_chain.invoke({
-            "history": history_text,
-            "context": context_text,
-            "message": msg,
-            "github_info": GITHUB_INFO # 블로그 정보 포함
-        })
-        
+        raw = (agent_prompt | llm | StrOutputParser()).invoke(
+            {
+                "history": history_text,
+                "context": context_text,
+                "message": msg,
+                "github_info": GITHUB_INFO,
+                "lang_instruction": lang_instruction,
+            }
+        )
+        action_result = _parse_agent_json(raw)
+
+        if action_result is None:
+            raise ValueError("structured JSON parse failed")
+
         if action_result.action == "save":
-            if session.get("user_verified"):
-                save_info(action_result.category, action_result.value)
-                response_text = f"✅ (기억됨) {action_result.value}"
+            cat = (action_result.category or "general").strip() or "general"
+            val = (action_result.value or "").strip()
+            if not val:
+                response_text = "저장할 내용이 비어 있습니다. 다시 말씀해 주세요."
+            elif session.get("user_verified"):
+                save_info(cat, val)
+                response_text = f"✅ (기억됨) {val}"
             else:
-                session.update({
-                    "is_verifying": True, 
-                    "pending_data": {"category": action_result.category, "value": action_result.value}
-                })
+                session.update(
+                    {
+                        "is_verifying": True,
+                        "pending_data": {"category": cat, "value": val},
+                    }
+                )
                 set_session_data(session_id, session)
                 response_text = "🔒 중요 정보를 저장하려면 본인 인증이 필요합니다. 비밀번호를 입력해주세요."
         else:
-            response_text = action_result.value if action_result.value else "답변을 생성할 수 없습니다."
+            response_text = (action_result.value or "").strip() or "답변을 생성할 수 없습니다."
 
         append_chat_history(session_id, "User", msg)
         append_chat_history(session_id, "AI", response_text)
         return {"response": response_text}
 
-    except Exception as e:
+    except Exception:
         traceback.print_exc()
-        return {"response": "죄송합니다. 처리 중 오류가 발생했습니다."}
+        try:
+            sys_msg = SystemMessage(
+                content=(
+                    "You are MinKowskiM's site assistant. Answer clearly and concisely. "
+                    + lang_instruction
+                )
+            )
+            human_msg = HumanMessage(
+                content=(
+                    f"[Context]\n{context_text}\n\n[History]\n{history_text}\n\n[User]\n{msg}"
+                )
+            )
+            out = llm.invoke([sys_msg, human_msg])
+            response_text = out.content if hasattr(out, "content") else str(out)
+        except Exception:
+            response_text = (
+                "요청을 처리하는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."
+            )
+
+        append_chat_history(session_id, "User", msg)
+        append_chat_history(session_id, "AI", response_text)
+        return {"response": response_text}
+
 
 @app.post("/clear")
 async def clear_chat(payload: ChatPayload):

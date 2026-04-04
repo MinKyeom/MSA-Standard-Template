@@ -58,10 +58,13 @@ export default function Sidebar({ isSidebarOpen, closeSidebar }) {
       showToast({ message: "Signed out.", type: "success" });
       closeSidebar();
       router.push("/");
+      router.refresh();
     } catch (error) {
       showToast({ message: "Failed to sign out.", type: "error" });
       console.error(error);
       manualLogout();
+      router.push("/");
+      router.refresh();
     }
   };
 

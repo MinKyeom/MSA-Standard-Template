@@ -1,17 +1,31 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useRef } from "react";
-import { getAuthUser, setOnUnauthorized, extendSession, fetchAuthMe, refreshSession } from "../services/api/auth";
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import {
+  getAuthUser,
+  setOnUnauthorized,
+  extendSession,
+  fetchAuthMe,
+  refreshSession,
+  logoutUser,
+} from "../services/api/auth";
 import { fetchMe } from "../services/api/user";
+import { useToast } from "../hooks/useToast";
 
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
 
-// 액세스 토큰 만료 30분 — 만료 5분 전에 세션 연장 시도
-const SESSION_EXTEND_INTERVAL_MS = 25 * 60 * 1000;
+/** 백엔드 액세스 토큰 30분과 맞춤: 로그인·연장 시점부터 30분 후 만료 */
+const ACCESS_SESSION_MS = 30 * 60 * 1000;
+/** 만료 5분 전(연장 없을 때) 알림 1회 */
+const WARN_REMAINING_MS = 5 * 60 * 1000;
+const SESSION_TICK_MS = 30 * 1000;
 
 export const AuthProvider = ({ children }) => {
+  const router = useRouter();
+  const { showToast } = useToast();
   const [authState, setAuthState] = useState({
     isAuthenticated: false,
     id: null,
@@ -19,7 +33,16 @@ export const AuthProvider = ({ children }) => {
     isAdmin: false,
   });
   const [isAuthInitialized, setIsAuthInitialized] = useState(false);
+  const [sessionExpiringSoon, setSessionExpiringSoon] = useState(false);
   const sessionTimerRef = useRef(null);
+  const sessionEndsAtRef = useRef(0);
+  const warnShownRef = useRef(false);
+
+  const resetSessionDeadline = useCallback(() => {
+    sessionEndsAtRef.current = Date.now() + ACCESS_SESSION_MS;
+    warnShownRef.current = false;
+    setSessionExpiringSoon(false);
+  }, []);
 
   const manualLogout = () => {
     if (typeof window !== "undefined") {
@@ -27,6 +50,9 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem("currentUserNickname");
       sessionStorage.setItem("auth_logout", "1");
     }
+    sessionEndsAtRef.current = 0;
+    warnShownRef.current = false;
+    setSessionExpiringSoon(false);
     if (sessionTimerRef.current) {
       clearInterval(sessionTimerRef.current);
       sessionTimerRef.current = null;
@@ -56,38 +82,61 @@ export const AuthProvider = ({ children }) => {
     return false;
   };
 
-  // 로그인 상태일 때 25분마다 세션 연장 (만료 시 자동 로그아웃)
+  /** 로그인 유지 중: 남은 시간이 5분 이하가 되면 토스트·배너 1회, 만료 시 자동 로그아웃 (자동 연장 없음) */
   useEffect(() => {
     if (!authState.isAuthenticated) {
       if (sessionTimerRef.current) {
         clearInterval(sessionTimerRef.current);
         sessionTimerRef.current = null;
       }
-      return;
+      return undefined;
     }
+    resetSessionDeadline();
     if (sessionTimerRef.current) clearInterval(sessionTimerRef.current);
     sessionTimerRef.current = setInterval(async () => {
-      try {
-        await extendSession();
-      } catch (e) {
-        try {
-          await refreshSession();
-          await extendSession();
-        } catch (_) {
-          manualLogout();
+      const now = Date.now();
+      const end = sessionEndsAtRef.current;
+      if (!end) return;
+      const remaining = end - now;
+      if (remaining <= 0) {
+        if (sessionTimerRef.current) {
+          clearInterval(sessionTimerRef.current);
+          sessionTimerRef.current = null;
         }
+        try {
+          await logoutUser();
+        } catch (_) {
+          /* ignore */
+        }
+        manualLogout();
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("auth:session-ended"));
+          try {
+            router.refresh();
+          } catch (_) {
+            /* ignore */
+          }
+        }
+        return;
       }
-    }, SESSION_EXTEND_INTERVAL_MS);
+      if (remaining <= WARN_REMAINING_MS && !warnShownRef.current) {
+        warnShownRef.current = true;
+        setSessionExpiringSoon(true);
+        showToast({
+          message:
+            "로그인 세션 만료까지 약 5분 남았습니다. 상단에서 세션 연장(Extend session)을 눌러 주세요.",
+          type: "warning",
+          durationMs: 10000,
+        });
+      }
+    }, SESSION_TICK_MS);
     return () => {
       if (sessionTimerRef.current) clearInterval(sessionTimerRef.current);
     };
-  }, [authState.isAuthenticated]);
+  }, [authState.isAuthenticated, resetSessionDeadline, showToast, router]);
 
   useEffect(() => {
     const initializeAuth = async () => {
-      // 로그아웃 플래그는 "다음 로그인 성공 시"에만 제거합니다.
-      // 여기서 지워버리면, 사용자가 로그아웃 후 새로고침을 2번 이상 했을 때
-      // refreshSession()이 다시 동작하며 재로그인되는 경쟁조건이 생길 수 있습니다.
       if (typeof window !== "undefined" && sessionStorage.getItem("auth_logout")) {
         setAuthState({ isAuthenticated: false, id: null, nickname: null, isAdmin: false });
         setIsAuthInitialized(true);
@@ -105,16 +154,13 @@ export const AuthProvider = ({ children }) => {
           await refreshSession();
           resolved = await fetchAndApplySessionUser();
         }
-        // localUser가 없는 상태에서만 강제 로그아웃(상태 초기화)
-        // localUser가 있는 경우엔 401/refresh 실패 케이스에서만 manualLogout이 호출되도록 아래 catch에서 처리
+        if (resolved) resetSessionDeadline();
         if (!resolved && !localUser.isAuthenticated) manualLogout();
       } catch (error) {
         const status = error?.response?.status;
-        // 401/403은 실제 미인증/권한 문제로 판단 → 로그아웃
         if (status === 401 || status === 403) {
           manualLogout();
         } else {
-          // 네트워크/일시 장애는 즉시 로그아웃하지 않고, 로컬 상태가 있으면 유지
           console.error("인증 확인 과정에서 일시적 오류 발생(로그아웃하지 않음):", error);
           if (!localUser.isAuthenticated) manualLogout();
         }
@@ -130,7 +176,6 @@ export const AuthProvider = ({ children }) => {
     setAuthState(getAuthUser());
   };
 
-  /** 로그인 직후 서버 응답으로 상태 즉시 반영 (새로고침 없이 로그아웃 버튼 등 표시) */
   const setLoginState = async (user) => {
     if (!user?.id) return;
     let isAdmin = false;
@@ -145,6 +190,7 @@ export const AuthProvider = ({ children }) => {
       isAdmin,
     };
     setAuthState(state);
+    resetSessionDeadline();
     if (typeof window !== "undefined") {
       sessionStorage.removeItem("auth_logout");
       localStorage.setItem("currentUserId", user.id);
@@ -152,24 +198,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  /** 수동 세션 연장 (버튼 클릭 시) — 30분 연장 */
   const extendSessionManually = async () => {
     try {
       try {
         await extendSession();
       } catch (_) {
-        // 만료 직전이면 refresh 후 extend 재시도
         await refreshSession();
         await extendSession();
       }
-      if (sessionTimerRef.current) clearInterval(sessionTimerRef.current);
-      sessionTimerRef.current = setInterval(async () => {
-        try {
-          await extendSession();
-        } catch (e) {
-          manualLogout();
-        }
-      }, SESSION_EXTEND_INTERVAL_MS);
+      resetSessionDeadline();
       return true;
     } catch (e) {
       manualLogout();
@@ -184,6 +221,7 @@ export const AuthProvider = ({ children }) => {
     isAuthInitialized,
     manualLogout,
     extendSessionManually,
+    sessionExpiringSoon,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -12,7 +12,8 @@ import SearchBar from "../Search/SearchBar";
 import "../../styles/Header.css";
 
 export default function Header() {
-  const { isAuthenticated, nickname, manualLogout, extendSessionManually } = useAuth();
+  const { isAuthenticated, nickname, manualLogout, extendSessionManually, sessionExpiringSoon } =
+    useAuth();
   const { showToast } = useToast();
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -119,7 +120,22 @@ export default function Header() {
         </div>
       )}
 
-      <header className="main-header">
+      <div className="header-sticky-stack">
+        {isAuthenticated && sessionExpiringSoon && (
+          <div className="session-expiry-banner" role="status">
+            세션 만료까지 약 5분 남았습니다.{" "}
+            <button
+              type="button"
+              className="session-expiry-banner__extend"
+              onClick={handleExtendSession}
+              disabled={extending}
+            >
+              {extending ? "연장 중…" : "지금 연장"}
+            </button>
+          </div>
+        )}
+
+        <header className="main-header">
         <div className="header-content-fluid">
           <div className="header-left-group">
             <button
@@ -219,6 +235,7 @@ export default function Header() {
           </div>
         </div>
       </header>
+      </div>
     </>
   );
 }
