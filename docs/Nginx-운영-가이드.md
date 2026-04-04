@@ -17,6 +17,8 @@ CI는 **호스트에 Nginx 패키지를 설치하지는 않습니다.** 대신 C
 
 **최초 전환 시:** 호스트에서 `sudo systemctl stop nginx` · `sudo systemctl disable nginx` 로 **기존 80/443 점유를 해제**한 뒤 `docker compose up -d` 하세요. 인증서는 기존과 같이 호스트에서 **certbot** 등으로 갱신하면 됩니다(컨테이너는 마운트로 즉시 반영).
 
+**배포(CI) 시 `address already in use` (80/443):** 호스트 **nginx**(또는 apache2)가 아직 떠 있으면 Docker `msa-nginx`가 바인딩하지 못합니다. GitHub Actions SSH 배포는 `scripts/free-host-ports-for-msa-nginx.sh` 로 nginx/apache2 를 먼저 중지합니다. **배포용 SSH 사용자**에 `sudo systemctl stop nginx` 등이 가능해야 합니다(`sudoers` NOPASSWD). 수동 배포 전에는 `./scripts/free-host-ports-for-msa-nginx.sh` 를 실행하세요.
+
 **레거시:** 호스트 `/etc/nginx` 만 쓰는 방식은 아래 절차(템플릿·`render-nginx.sh`·`systemctl reload nginx`)로 유지할 수 있습니다. 템플릿 원본은 `nginx/templates/*.template` 입니다.
 
 ---
