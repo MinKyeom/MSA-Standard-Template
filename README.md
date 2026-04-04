@@ -2,6 +2,9 @@
 
 Fork this template and build your own production-ready blog with MSA, Kafka, JWT/OAuth, hybrid search, and CI/CD in minutes.
 
+[![GitHub stars](https://img.shields.io/github/stars/MinKyeom/MSA-Standard-Template?style=social)](https://github.com/MinKyeom/MSA-Standard-Template)
+> **If this project helps you, please consider giving it a ⭐ to support the development!** 
+
 <p align="center">
   <a href="#english">English</a>
   &nbsp;|&nbsp;
@@ -267,6 +270,9 @@ GROQ_API_KEY=
 
 이 프로젝트는 **MSA 기반 블로그 템플릿**입니다.  
 Fork 후 `.env`만 채우면 Docker Compose로 바로 실행하고, GitHub Actions 기반 CI/CD까지 연결할 수 있습니다.
+
+[![GitHub stars](https://img.shields.io/github/stars/MinKyeom/MSA-Standard-Template?style=social)](https://github.com/MinKyeom/MSA-Standard-Template)
+> **"이 템플릿이 도움이 되셨다면 ⭐ 하나로 응원해 주세요! 여러분의 관심이 프로젝트를 계속 발전시키는 원동력이 됩니다."**
 
 ### 전체 기능 정리 (카테고리별)
 
