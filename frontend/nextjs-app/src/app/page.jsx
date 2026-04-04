@@ -16,7 +16,7 @@ const siteUrlSlash = siteUrl.endsWith("/") ? siteUrl : `${siteUrl}/`;
 // Trim Paths 스타일: centerline 붓이 왼쪽 → 오른쪽으로 순차(stagger)로 써짐
 const TOTAL_LOOP = 28;
 const HERO_TITLE = "MinKowskiM";
-const TITLE_PATH_COUNT = 11; // MinKowskiM (o 바깥/안 분리)
+const TITLE_PATH_COUNT = 15; // public/text.svg 서브패스 수
 const STEP_TITLE = 0.4; // 타이틀 각 획 사이 간격
 // 메인 문구가 완전히 써진 뒤에 부제목이 써지도록: 마지막 획이 끝나는 시점
 const DRAW_PHASE_RATIO = 0.18; // keyframes에서 그리기가 끝나는 비율(18%)

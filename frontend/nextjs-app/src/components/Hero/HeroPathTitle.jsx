@@ -1,14 +1,18 @@
 "use client";
 
 import { useRef, useEffect, useState, useId } from "react";
-import TITLE_PATHS from "../../data/minKowskiMPaths.json";
+// public/text.svg (MinKowskiM)에서 M 서브패스로 분리 — 에디터에서 SVG만 갈아끼우려면 동일 규칙으로 JSON 재생성
+import TITLE_PATHS from "../../data/textTitlePaths.json";
 
 // 한 루프 전체 길이 (초) – 그리기 후 오래 유지, 부드럽게 페이드 (반복감 완화)
 const TOTAL_LOOP = 28;
 // 손글씨 느낌: 초반에 빠르고 끝에서 쫀득하게 맺힘
 const HANDWRITING_EASING = "cubic-bezier(0.2, 0, 0.2, 1)";
-const VIEWBOX = "0 0 445.436 73.719";
+// text.svg viewBox (높이 ≈ 기존의 절반 → 마스크 붓 두께도 비율 맞춤)
+const VIEWBOX = "0.01764705777168274 14.699999809265137 217.09161376953125 35.96379089355469";
 const DOT_LENGTH_THRESHOLD = 5; // 이 길이 미만이면 점/짧은 획으로 취급
+/** text.svg 좌표계에서 기존 6px 붓에 해당하는 두께 (viewBox 높이 비 ≈ 0.49) */
+const MASK_STROKE_MAIN = 3;
 
 // path의 시작점 M 명령에서 x 좌표 추출
 function getStartX(d) {
@@ -17,8 +21,8 @@ function getStartX(d) {
 }
 
 /**
- * MinKowskiM_new.svg 센터라인 path를 두꺼운 붓(mask)으로 사용하여
- * 뒤에 있는 실제 텍스트 fill이 한 획씩 써지며 드러나는 효과.
+ * text.svg 윤곽 path를 두꺼운 붓(mask)으로 사용하여
+ * fill이 왼쪽→오른쪽 순으로 써지며 드러나는 효과.
  */
 export default function HeroPathTitle({
   stepDelay = 0.4,
@@ -79,9 +83,7 @@ export default function HeroPathTitle({
                 // 모든 획 동일 duration → i 같은 글자가 늦게 끝나지 않고 순서대로 완성
                 const duration = TOTAL_LOOP;
 
-                // o 바깥쪽(4): 5px, o 안쪽(5): 더 얇게 2.5px, 나머지: 6px (path 11개로 o가 바깥/안 분리됨)
-                const strokeWidth =
-                  orderIndex === 4 ? 5 : orderIndex === 5 ? 2.5 : 6;
+                const strokeWidth = MASK_STROKE_MAIN;
 
                 const animatedStyle =
                   ready && len
@@ -126,7 +128,7 @@ export default function HeroPathTitle({
             animationFillMode: "backwards",
           }}
         >
-          {/* 원본 MinKowskiM path들을 그대로 fill로 사용 → 좌표가 마스크와 1:1 정렬됨 */}
+          {/* text.svg와 동일 path → 마스크와 1:1 */}
           <g mask={`url(#${maskId})`} fill="currentColor" stroke="none">
             {TITLE_PATHS.map((d, i) => (
               <path key={i} d={d} />
