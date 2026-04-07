@@ -53,6 +53,88 @@ body.dark-mode .homepage-wrapper .no-posts {
   overflow: hidden;
 }
 
+/* --- 요청 반영: 싱글라인 손글씨 루프(메인 -> 부제 -> 유지 -> 재시작) --- */
+.hero-handwriting {
+  --hero-loop: 14s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.hero-handwriting__line {
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  width: 0;
+  max-width: 100%;
+}
+
+.hero-handwriting__title {
+  font-family: var(--font-family-cursive), var(--font-caveat), Caveat, cursive;
+  font-size: 2.75rem;
+  font-weight: 400;
+  line-height: 1.1;
+  color: var(--color-logo);
+  letter-spacing: 0.02em;
+  animation: heroWriteTitle var(--hero-loop) steps(32, end) infinite;
+}
+
+.hero-handwriting__subtitle {
+  font-family: var(--font-family-cursive), var(--font-caveat), Caveat, cursive;
+  font-size: 2.35em;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--color-text-sub);
+  animation: heroWriteSubtitle var(--hero-loop) steps(44, end) infinite;
+}
+
+.hero-handwriting__ink {
+  display: inline-block;
+  opacity: 0;
+  /* 싱글라인 필기 느낌: 채워진 글자 + 약한 잉크 감 */
+  color: currentColor;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.05));
+  letter-spacing: inherit;
+}
+
+.hero-handwriting__ink--title {
+  color: var(--color-logo);
+  animation: heroInkTitle var(--hero-loop) ease-out infinite;
+}
+
+.hero-handwriting__ink--subtitle {
+  color: var(--color-text-sub);
+  animation: heroInkSubtitle var(--hero-loop) ease-out infinite;
+}
+
+@keyframes heroWriteTitle {
+  0% { width: 0; }
+  28% { width: 10.6ch; } /* MinKowskiM */
+  86% { width: 10.6ch; } /* 부제목 작성 이후 전체 유지 */
+  100% { width: 0; }
+}
+
+@keyframes heroWriteSubtitle {
+  0%, 34% { width: 0; }   /* 타이틀이 먼저 써짐 */
+  64% { width: 34ch; }    /* 부제목 작성 완료 */
+  86% { width: 34ch; }    /* 둘 다 잠시 고정 */
+  100% { width: 0; }
+}
+
+@keyframes heroInkTitle {
+  0% { opacity: 0; }
+  8%, 86% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes heroInkSubtitle {
+  0%, 34% { opacity: 0; }
+  42%, 86% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 /* --- Hero: Trim Paths 스타일 드로잉 (SVG Mask, 28s 루프) --- */
 /* 그리기 → 오래 유지 → 부드럽게 페이드 (반복감 줄이고 남아있는 느낌) */
 

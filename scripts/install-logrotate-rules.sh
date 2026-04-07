@@ -38,6 +38,7 @@ EOF
 if command -v sudo >/dev/null 2>&1; then
   if ! sudo mv /tmp/msa-docker-containers.logrotate /etc/logrotate.d/msa-docker-containers \
     || ! sudo mv /tmp/msa-system.logrotate /etc/logrotate.d/msa-system \
+    || ! sudo chown root:root /etc/logrotate.d/msa-docker-containers /etc/logrotate.d/msa-system \
     || ! sudo chmod 644 /etc/logrotate.d/msa-docker-containers /etc/logrotate.d/msa-system; then
     echo "[logrotate] install failed (sudo permission); skip"
     exit 0

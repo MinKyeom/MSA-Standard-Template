@@ -3,8 +3,7 @@ export const dynamic = "force-dynamic";
 
 import { fetchPosts, fetchPopularPosts } from "../services/api/posts";
 import PostCard from "../components/Post/PostCard";
-import HeroStrokeText from "../components/Hero/HeroStrokeText";
-import HeroPathTitle from "../components/Hero/HeroPathTitle";
+import HeroHandwritingLoop from "../components/Hero/HeroHandwritingLoop";
 import "../styles/globals.css";
 import "../styles/HomePage.css";
 import Link from "next/link";
@@ -12,16 +11,6 @@ import { getSiteUrl } from "../config/site";
 
 const siteUrl = getSiteUrl();
 const siteUrlSlash = siteUrl.endsWith("/") ? siteUrl : `${siteUrl}/`;
-
-// Trim Paths 스타일: centerline 붓이 왼쪽 → 오른쪽으로 순차(stagger)로 써짐
-const TOTAL_LOOP = 28;
-const HERO_TITLE = "MinKowskiM";
-const TITLE_PATH_COUNT = 15; // public/text.svg 서브패스 수
-const STEP_TITLE = 0.4; // 타이틀 각 획 사이 간격
-// 메인 문구가 완전히 써진 뒤에 부제목이 써지도록: 마지막 획이 끝나는 시점
-const DRAW_PHASE_RATIO = 0.18; // keyframes에서 그리기가 끝나는 비율(18%)
-const SUBTITLE_START_DELAY =
-  (TITLE_PATH_COUNT - 1) * STEP_TITLE + DRAW_PHASE_RATIO * TOTAL_LOOP;
 
 // 🌟 수정: 한국어 우선 SEO 메타데이터 개선
 export const metadata = {
@@ -90,19 +79,9 @@ export default async function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
       <div className="homepage-container">
         <section className="hero-section">
-          <HeroPathTitle
-            stepDelay={STEP_TITLE}
-            startDelay={0}
-            className="hero-title"
-            as="h1"
-          />
-          <HeroStrokeText
-            text="A personal log across space and time."
-            stepDelay={0.1}
-            startDelay={SUBTITLE_START_DELAY}
-            className="hero-subtitle"
-            variant="subtitle"
-            as="p"
+          <HeroHandwritingLoop
+            title="MinKowskiM"
+            subtitle="A personal log across space and time."
           />
           <Link href="/post" className="btn-primary">
             View all posts &rarr;
