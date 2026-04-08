@@ -1,0 +1,3 @@
+/** text.svg / textTitlePaths.json 과 동일 좌표계 */
+export const TITLE_VIEWBOX =
+  "0.01764705777168274 14.699999809265137 217.09161376953125 35.96379089355469";

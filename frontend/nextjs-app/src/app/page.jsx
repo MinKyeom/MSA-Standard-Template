@@ -3,7 +3,10 @@ export const dynamic = "force-dynamic";
 
 import { fetchPosts, fetchPopularPosts } from "../services/api/posts";
 import PostCard from "../components/Post/PostCard";
-import HeroHandwritingLoop from "../components/Hero/HeroHandwritingLoop";
+import HeroPathWrite from "../components/Hero/HeroPathWrite";
+import { TITLE_VIEWBOX } from "../config/heroSvgConstants";
+import TITLE_PATHS from "../data/textTitlePaths.json";
+import SUBTITLE_PATHS from "../data/textSubtitlePaths.json";
 import "../styles/globals.css";
 import "../styles/HomePage.css";
 import Link from "next/link";
@@ -11,6 +14,14 @@ import { getSiteUrl } from "../config/site";
 
 const siteUrl = getSiteUrl();
 const siteUrlSlash = siteUrl.endsWith("/") ? siteUrl : `${siteUrl}/`;
+
+// SVG path 필기 순서 후 부제 시작 (textTitlePaths.json 획 개수와 동기화)
+const TOTAL_LOOP = 28;
+const TITLE_PATH_COUNT = TITLE_PATHS.length;
+const STEP_TITLE = 0.4;
+const DRAW_PHASE_RATIO = 0.18;
+const SUBTITLE_START_DELAY =
+  (TITLE_PATH_COUNT - 1) * STEP_TITLE + DRAW_PHASE_RATIO * TOTAL_LOOP;
 
 // 🌟 수정: 한국어 우선 SEO 메타데이터 개선
 export const metadata = {
@@ -79,9 +90,23 @@ export default async function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
       <div className="homepage-container">
         <section className="hero-section">
-          <HeroHandwritingLoop
-            title="MinKowskiM"
-            subtitle="A personal log across space and time."
+          <HeroPathWrite
+            viewBox={TITLE_VIEWBOX}
+            paths={TITLE_PATHS}
+            stepDelay={STEP_TITLE}
+            startDelay={0}
+            className="hero-title"
+            as="h1"
+            maskStrokeWidth={3}
+          />
+          <HeroPathWrite
+            viewBox={SUBTITLE_PATHS.viewBox}
+            pathsByChar={SUBTITLE_PATHS.byChar}
+            stepDelay={0.1}
+            startDelay={SUBTITLE_START_DELAY}
+            className="hero-subtitle"
+            as="p"
+            maskStrokeWidth={2.6}
           />
           <Link href="/post" className="btn-primary">
             View all posts &rarr;
