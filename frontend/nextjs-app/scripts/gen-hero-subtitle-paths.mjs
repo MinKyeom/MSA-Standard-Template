@@ -1,6 +1,7 @@
 /**
- * Caveat Regular로 부제 문장의 글자별 SVG path 생성 → src/data/textSubtitlePaths.json
- * 실행: npm run gen:hero-subtitle-paths (frontend/nextjs-app)
+ * Caveat TTF로 부제 문장의 글자별 SVG path 생성 → src/data/textSubtitlePaths.json
+ * 사용: `npm i -D opentype.js` 후 `node scripts/gen-hero-subtitle-paths.mjs`
+ * (CI/Docker는 package-lock 동기화를 위해 npm 스크립트는 Python 생성기만 사용)
  */
 import opentype from "opentype.js";
 import fs from "fs";
