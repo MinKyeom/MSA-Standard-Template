@@ -198,11 +198,11 @@ body.dark-mode .auth-container {
   border: none;
   cursor: pointer;
   background-color: var(--color-accent);
-  color: white;
+  color: var(--color-on-accent, #fff);
   transition: all 0.2s ease-in-out;
 }
 .auth-button:hover:not(:disabled) {
-  background-color: #455a64;
+  background-color: var(--color-accent-hover);
 }
 .auth-button:disabled {
   opacity: 0.7;

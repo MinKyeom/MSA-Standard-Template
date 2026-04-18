@@ -33,7 +33,7 @@
     padding: 15px;
     /* 주석: 강조색을 헤더 배경으로 사용 */
     background-color: var(--color-accent); 
-    color: white; /* 강조색에 대비되는 흰색 텍스트 */
+    color: var(--color-on-accent, #fff);
 }
 
 .chatbot-header h3 {
@@ -80,7 +80,7 @@
 .chatbot-header button {
     background: none;
     border: none;
-    color: white;
+    color: var(--color-on-accent, #fff);
     font-size: 1.5em;
     cursor: pointer;
     line-height: 1; /* 아이콘 중앙 정렬 */
@@ -155,7 +155,7 @@
     /* 주석: 사용자 메시지 스타일 */
     align-self: flex-end;
     background-color: var(--color-accent); /* 사용자 메시지는 강조색 */
-    color: white;
+    color: var(--color-on-accent, #fff);
     border-bottom-right-radius: 4px; /* 끝을 뾰족하게 */
 }
 
@@ -236,7 +236,7 @@
     height: 60px; 
     border-radius: 50%; 
     background-color: var(--color-accent); 
-    color: white; 
+    color: var(--color-on-accent, #fff); 
     font-size: 1.5em; 
     border: none;
     box-shadow: 0 4px 15px var(--color-shadow-strong);
@@ -260,8 +260,8 @@
     font-style: normal;
     letter-spacing: 0.02em;
     line-height: 1;
-    color: white;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    color: var(--color-on-accent, #fff);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
     display: inline-block;
     transform: translateY(-1px);
 }

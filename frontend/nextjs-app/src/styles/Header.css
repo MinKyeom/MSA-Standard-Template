@@ -14,25 +14,25 @@
   flex-wrap: wrap;
   padding: 8px 14px;
   font-size: 0.9rem;
-  background: linear-gradient(90deg, #fff3e0, #ffe0b2);
-  color: #5d4037;
-  border-bottom: 1px solid #ffcc80;
+  background: var(--color-secondary);
+  color: var(--color-text-main);
+  border-bottom: 1px solid var(--color-border);
   text-align: center;
 }
 
 body.dark-mode .session-expiry-banner {
-  background: linear-gradient(90deg, #3e2723, #4e342e);
-  color: #ffccbc;
-  border-bottom-color: #5d4037;
+  background: var(--color-secondary);
+  color: var(--color-text-main);
+  border-bottom-color: var(--color-border);
 }
 
 .session-expiry-banner__extend {
   padding: 4px 12px;
   font-size: 0.85rem;
   border-radius: 6px;
-  border: 1px solid #e65100;
-  background: #fff;
-  color: #bf360c;
+  border: 1px solid var(--color-border);
+  background: var(--color-primary);
+  color: var(--color-text-main);
   cursor: pointer;
 }
 
@@ -42,16 +42,16 @@ body.dark-mode .session-expiry-banner {
 }
 
 body.dark-mode .session-expiry-banner__extend {
-  background: #6d4c41;
-  color: #ffe0b2;
-  border-color: #ffab91;
+  background: var(--color-primary);
+  color: var(--color-text-main);
+  border-color: var(--color-border);
 }
 
 .main-header {
   background-color: var(--color-primary);
   border-bottom: 1px solid var(--color-border);
   padding: 10px 15px;
-  box-shadow: 0 2px 5px var(--color-shadow);
+  box-shadow: 0 1px 0 var(--color-border);
 }
 
 .header-content-fluid {
@@ -109,30 +109,33 @@ body.dark-mode .session-expiry-banner__extend {
   padding: 5px 10px !important;
 }
 
-/* 테마 토글 버튼 배경 제거 */
-.header-left-group button,
-.header-left-group .theme-toggle-btn,
-.header-left-group .global-theme-toggle {
+/* 테마 토글: 오른쪽 그룹에서 검색과 동일한 원형 히트 영역 */
+.header-right-group .global-theme-toggle {
   background: none !important;
   border: none !important;
   box-shadow: none !important;
-  padding: 5px !important;
+  padding: 0 !important;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: var(--color-text-main);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
-.header-left-group .global-theme-toggle {
-  margin-left: 6px;
+.header-right-group .global-theme-toggle:hover {
+  background: var(--color-secondary) !important;
 }
-.header-left-group .global-theme-toggle svg {
+
+.header-right-group .global-theme-toggle svg {
   width: 1.25rem;
   height: 1.25rem;
 }
 
-/* 오른쪽 그룹: 검색 + 로그인/로그아웃 */
+/* 오른쪽 그룹: 검색 + 테마 + 로그인/로그아웃 */
 .header-right-group {
   display: flex;
   align-items: center;

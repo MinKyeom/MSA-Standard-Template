@@ -58,8 +58,8 @@ export default function PostActions({ postId, postAuthorId }) {
           padding: "8px 16px",
           borderRadius: "6px",
           border: "none",
-          backgroundColor: "#ff4d4f",
-          color: "white",
+          backgroundColor: "#b71c1c",
+          color: "#ffffff",
           cursor: "pointer",
         }}
       >

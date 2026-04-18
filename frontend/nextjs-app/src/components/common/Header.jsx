@@ -149,8 +149,6 @@ export default function Header() {
             <Link href="/" className="logo-text-header">
               MinKowskiM
             </Link>
-
-            <HeaderThemeToggle />
           </div>
 
           <div className="header-right-group">
@@ -168,6 +166,8 @@ export default function Header() {
                 </svg>
               </button>
             </div>
+
+            <HeaderThemeToggle />
 
             <nav className="header-auth-nav">
               {isAuthenticated ? (

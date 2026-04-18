@@ -227,9 +227,10 @@ export default function SignupForm() {
               className="confirm-btn"
               style={{
                 padding: "0 20px",
-                backgroundColor: "#007bff",
-                color: "white",
+                backgroundColor: "var(--color-accent)",
+                color: "var(--color-on-accent, #fff)",
                 borderRadius: "4px",
+                border: "none",
               }}
             >
               Verify

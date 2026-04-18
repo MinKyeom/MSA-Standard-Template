@@ -117,7 +117,7 @@
 .comment-badge {
     display: inline-block;
     background-color: var(--color-accent);
-    color: white;
+    color: var(--color-on-accent, #fff);
     padding: 2px 8px;
     border-radius: 4px;
     font-size: 0.7em;

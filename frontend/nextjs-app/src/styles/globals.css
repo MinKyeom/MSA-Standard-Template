@@ -4,52 +4,51 @@
 /* --- 1. 라이트 모드 (기본 스타일) --- */
 /* ---------------------------------------------------------------- */
 :root {
-  /* 폰트 설정 */
-  /* 🌟 한국어 우선 폰트 설정 */
   --font-family-main: "Spoqa Han Sans Neo", "Inter", sans-serif;
-  /* 🌟 감성적 디자인을 위한 필기체 폰트 변수 */
-  /* --font-family-cursive: 'Sacramento', cursive; */
   --font-family-cursive: var(--font-caveat), cursive;
-  /* 라이트 모드 (가을 이미지 톤에 맞춤) */
-  --color-background: #faf5ee; /* 가을 하늘과 어울리는 담황색 */
-  --color-primary: #fdfbf7; /* 카드·헤더 (따뜻한 화이트) */
-  --color-secondary: #f3ebe0; /* 보조 배경 */
-  --color-text-main: #212121; /* 기본 텍스트 (진한 회색) */
-  --color-text-sub: #757575; /* 서브 텍스트 (중간 회색) */
+  /* 라이트: 흰 배경, 미니멀 대비 */
+  --color-background: #ffffff;
+  --color-primary: #ffffff;
+  --color-secondary: #f5f5f5;
+  --color-bg-sub: #f5f5f5;
+  --color-text-main: #111111;
+  --color-text-sub: #5c5c5c;
 
-  /* 🌟 로고/강조색 변경 (파란색 -> 세련된 회색/검정) */
-  --color-accent: #546e7a; /* 강조 색상 (소프트한 청회색) */
-  --color-link: #37474f; /* 링크 색상 */
-  --color-logo: #333333; /* 🌟 로고 색상 (다크 모드 대비) */
+  --color-accent: #111111;
+  --color-accent-hover: #000000;
+  --color-on-accent: #ffffff;
+  --color-link: #111111;
+  --color-logo: #111111;
 
-  --color-border: rgba(0, 0, 0, 0.1); /* 테두리 (라이트) */
-  --color-shadow: rgba(0, 0, 0, 0.05); /* 얕은 그림자 (라이트) */
-  --color-shadow-strong: rgba(0, 0, 0, 0.15); /* 강한 그림자 (라이트) */
-  --color-success: #2e7d32;
-  --color-error: #c62828;
+  --color-border: rgba(0, 0, 0, 0.1);
+  --color-shadow: rgba(0, 0, 0, 0.06);
+  --color-shadow-strong: rgba(0, 0, 0, 0.12);
+  --color-success: #1b5e20;
+  --color-error: #b71c1c;
 }
 
 /* ---------------------------------------------------------------- */
 /* --- 2. 다크 모드 --- */
 /* ---------------------------------------------------------------- */
 body.dark-mode {
-  /* 🌟 남색 대신 검은색에 가까운 다크 톤 */
-  --color-background: #07080a;
-  --color-primary: #0c0d10;
-  --color-secondary: #12141a;
-  --color-text-main: #e2e6ee;
-  --color-text-sub: #9ca8b8;
+  --color-background: #000000;
+  --color-primary: #000000;
+  --color-secondary: #141414;
+  --color-bg-sub: #141414;
+  --color-text-main: #f5f5f5;
+  --color-text-sub: #a3a3a3;
 
-  /* 🌟 로고/강조색 (밤하늘 톤에 맞춤) */
-  --color-accent: #8ba3c7;
-  --color-link: #b8c8dc;
-  --color-logo: #e2e6ee;
+  --color-accent: #f0f0f0;
+  --color-accent-hover: #ffffff;
+  --color-on-accent: #0a0a0a;
+  --color-link: #e5e5e5;
+  --color-logo: #f5f5f5;
 
-  --color-border: rgba(255, 255, 255, 0.12);
-  --color-shadow: rgba(0, 0, 0, 0.35);
-  --color-shadow-strong: rgba(0, 0, 0, 0.5);
-  --color-success: #66bb6a;
-  --color-error: #ef5350;
+  --color-border: rgba(255, 255, 255, 0.14);
+  --color-shadow: rgba(0, 0, 0, 0.4);
+  --color-shadow-strong: rgba(0, 0, 0, 0.55);
+  --color-success: #81c784;
+  --color-error: #ef9a9a;
 }
 
 /* ---------------------------------------------------------------- */
@@ -132,11 +131,11 @@ a:hover {
 
 .btn-primary {
   background-color: var(--color-accent);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .btn-primary:hover {
-  background-color: #455a64; /* Accent color dark variant */
+  background-color: var(--color-accent-hover);
   box-shadow: 0 4px 10px var(--color-shadow-strong);
 }
 
@@ -163,10 +162,10 @@ a:hover {
 }
 .btn-primary-small {
   background-color: var(--color-accent);
-  color: white;
+  color: var(--color-on-accent);
 }
 .btn-primary-small:hover {
-  background-color: #455a64;
+  background-color: var(--color-accent-hover);
 }
 .btn-secondary-small {
   background-color: var(--color-secondary);
@@ -329,188 +328,6 @@ a:hover {
 }
 
 /* ---------------------------------------------------------------- */
-/* --- 9. 전체 사이트 배경: 가을 이미지 / 밤하늘 이미지 톤 --- */
-/* ---------------------------------------------------------------- */
-.global-bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  height: 100vh;
-  min-height: 100%;
-  z-index: -1;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-/* 라이트: 나무길 가을 – 따뜻한 갈색·담황·부드러운 하늘 */
-.global-bg-leaves {
-  position: absolute;
-  inset: 0;
-  min-width: 100%;
-  min-height: 100%;
-  display: block;
-}
-
-body.dark-mode .global-bg-leaves {
-  display: none;
-}
-
-.global-bg-leaves-sky {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    180deg,
-    #faf5ee 0%,
-    #f3e9dc 18%,
-    #eadcc8 38%,
-    #e0cfb8 58%,
-    #d4c2a8 78%,
-    #c9b598 100%
-  );
-}
-
-.global-bg-leaf {
-  position: absolute;
-  top: -5%;
-  width: 22px;
-  height: 36px;
-  color: var(--leaf-color, #b85c38);
-  transform: translateX(-50%) scale(var(--leaf-scale, 1)) rotate(var(--leaf-rotate-start, 0deg));
-  animation: globalLeafFall ease-in-out infinite;
-  opacity: 0;
-}
-
-.global-bg-leaf-svg {
-  width: 100%;
-  height: 100%;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.08));
-}
-
-@keyframes globalLeafFall {
-  0% {
-    transform: translateX(-50%) translateY(0) scale(var(--leaf-scale, 1)) rotate(var(--leaf-rotate-start, 0deg));
-    opacity: 0;
-  }
-  2% { opacity: 0.82; }
-  22% {
-    transform: translateX(calc(-50% + 5px)) translateY(22vh) scale(var(--leaf-scale, 1)) rotate(calc(var(--leaf-rotate-start, 0deg) + 55deg));
-  }
-  48% {
-    transform: translateX(calc(-50% - 4px)) translateY(48vh) scale(var(--leaf-scale, 1)) rotate(calc(var(--leaf-rotate-start, 0deg) + 140deg));
-  }
-  72% {
-    transform: translateX(calc(-50% + 6px)) translateY(72vh) scale(var(--leaf-scale, 1)) rotate(calc(var(--leaf-rotate-start, 0deg) + 240deg));
-  }
-  98% { opacity: 0.55; }
-  100% {
-    transform: translateX(calc(-50% + var(--leaf-sway, 0px))) translateY(106vh) scale(var(--leaf-scale, 1)) rotate(calc(var(--leaf-rotate-start, 0deg) + 360deg));
-    opacity: 0;
-  }
-}
-
-/* 다크: 밤하늘 이미지 – 깊은 남색·은하수 느낌·자연스러운 유성 */
-.global-bg-night {
-  position: absolute;
-  inset: 0;
-  min-width: 100%;
-  min-height: 100%;
-  display: none;
-}
-
-body.dark-mode .global-bg-night {
-  display: block;
-}
-
-.global-bg-night-sky {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  /* 🌟 파란 느낌 줄이고 검은색에 가까운 그라데이션 */
-  background: linear-gradient(
-    180deg,
-    #050508 0%,
-    #08090c 25%,
-    #0a0b0f 45%,
-    #08090c 65%,
-    #060708 85%,
-    #040506 100%
-  );
-}
-
-.global-bg-milky {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    ellipse 120% 40% at 50% 35%,
-    rgba(120, 150, 220, 0.06) 0%,
-    transparent 55%
-  );
-  pointer-events: none;
-}
-
-.global-bg-stars {
-  position: absolute;
-  inset: 0;
-}
-
-.global-bg-star {
-  position: absolute;
-  border-radius: 50%;
-  background: #fff;
-  transform: translate(-50%, -50%);
-  box-shadow: 0 0 3px 1px rgba(255, 255, 255, 0.35);
-}
-
-.global-bg-star--twinkle {
-  animation: globalStarTwinkle 5.5s ease-in-out infinite;
-}
-
-@keyframes globalStarTwinkle {
-  0%, 100% { opacity: 0.25; transform: translate(-50%, -50%) scale(1); }
-  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.12); }
-}
-
-.global-bg-meteors {
-  position: absolute;
-  inset: 0;
-}
-
-.global-bg-meteor {
-  position: absolute;
-  width: var(--meteor-width, 150px);
-  height: 2px;
-  transform: rotate(var(--meteor-angle, -62deg));
-  transform-origin: left center;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.98) 0%,
-    rgba(255, 255, 255, 0.82) 12%,
-    rgba(200, 220, 255, 0.38) 38%,
-    rgba(160, 190, 255, 0.08) 62%,
-    transparent 82%
-  );
-  box-shadow: 0 0 8px 1px rgba(255, 255, 255, 0.3);
-  animation: globalMeteorFall ease-out infinite;
-}
-
-@keyframes globalMeteorFall {
-  0% {
-    opacity: 0;
-    transform: rotate(var(--meteor-angle, -62deg)) translateX(0) translateY(0);
-  }
-  4% { opacity: 1; }
-  88% { opacity: 0.75; }
-  100% {
-    opacity: 0;
-    transform: rotate(var(--meteor-angle, -62deg)) translateX(-78vw) translateY(88vh);
-  }
-}
-
-/* ---------------------------------------------------------------- */
 /* 포스트 목록·상세·글쓰기 — 뷰포트 대응 */
 /* ---------------------------------------------------------------- */
 
@@ -635,7 +452,7 @@ body.dark-mode .global-bg-night {
   padding: 20px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  background-color: var(--color-bg-sub, #f9f9f9);
+  background-color: var(--color-bg-sub);
   overflow-y: auto;
   color: var(--color-text-main);
 }
