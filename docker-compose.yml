@@ -469,11 +469,13 @@ services:
 
   # ----- 모니터링 (로그 수집만) — observe.minkowskim.com으로 전송 -----
   # Loki/Grafana는 물리 분리 서버(my-msa-project-monitoring)에서 운영
-  # 기동: docker compose --profile monitoring up -d
+  # 프로필 monitoring: GitHub Actions 배포(COMPOSE_PROFILES=edge)에는 기동되지 않음 → 필요 시 scripts/start-fluent-bit.sh
   fluent-bit:
     image: fluent/fluent-bit:2.2
     container_name: msa-fluent-bit
     restart: unless-stopped
+    profiles:
+      - monitoring
     volumes:
       - ./monitoring/fluent-bit/fluent-bit-remote.conf:/fluent-bit/etc/fluent-bit.conf
       - ./monitoring/fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf
@@ -485,8 +487,6 @@ services:
       - LOKI_PORT=${LOKI_PORT:-443}
     mem_limit: 64m
     logging: *default-logging
-    # profiles:
-    #   - monitoring
     networks:
       - msa-network
 

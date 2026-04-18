@@ -3,6 +3,7 @@
 #
 # 공개 80/443 은 Compose 의 reverse-proxy(프로필 edge) + 호스트 /etc/letsencrypt 마운트.
 #    서버 .env 에 COMPOSE_PROFILES=edge 포함(워크플로가 비어 있을 때 자동 추가). 호스트 systemctl nginx 는 중지 후 사용.
+# Fluent Bit(프로필 monitoring)은 배포 시 자동 기동하지 않음 — 서버에서 bash scripts/start-fluent-bit.sh 또는 COMPOSE_PROFILES=edge,monitoring
 #
 # Secrets (Repository → Settings → Secrets and variables → Actions):
 #   ENV_VARS   — 프로젝트 루트 .env 와 동일한 다줄 내용 (NEXT_PUBLIC_*, DOCKER_IMAGE_PREFIX, JWT 등)
@@ -219,5 +220,6 @@ jobs:
             # msa-nginx 가 80/443 바인딩 — 호스트 패키지 nginx 등이 점유 중이면 "address already in use" 로 실패
             bash scripts/free-host-ports-for-msa-nginx.sh
             # --pull always 로 레지스트리 최신 이미지 확보 + 강제 재생성(별도 pull 생략으로 이중 다운로드 방지)
+            # COMPOSE_PROFILES=edge 만 활성 — fluent-bit(monitoring)은 scripts/start-fluent-bit.sh 로 별도 기동
             docker compose up -d --pull always --force-recreate --remove-orphans
             bash scripts/post-deploy-docker-prune.sh

@@ -86,7 +86,7 @@ This is an open-source **MSA blog platform template** based on:
 
 - Docker Compose local and production operation
 - CI/CD workflow with selective image build and unchanged-image retag
-- Optional monitoring helpers: Fluent Bit, node-exporter, Kafka UI profile
+- Optional monitoring helpers: Fluent Bit (`--profile monitoring` / `scripts/start-fluent-bit.sh`; not started by CI `edge` deploy), node-exporter, Kafka UI profile
 - Autoheal for unhealthy containers
 
 ### MSA Server Feature Mapping
