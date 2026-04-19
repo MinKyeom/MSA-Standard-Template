@@ -65,7 +65,7 @@
 }
 
 .hero-subtitle .hero-stroke-svg {
-  max-height: 65px;
+  max-height: 56px;
 }
 
 /* 마스크 선·면 레이어: 대기 중 0% 키프레임 적용(backwards), 잔상 없음 */
@@ -162,7 +162,7 @@
 /* 부제 — 타이틀 쓰인 뒤 같은 Write-on 스타일 */
 .hero-subtitle {
   font-family: var(--font-family-cursive) !important;
-  font-size: 2.35em;
+  font-size: 2em;
   font-weight: 400;
   color: var(--color-text-sub);
   line-height: 1.7;
@@ -448,7 +448,7 @@ body.dark-mode .post-card__media--default {
     font-size: 3.5rem;
   }
   .hero-subtitle {
-    font-size: 1.7rem;
+    font-size: 1.5rem;
   }
   .post-list {
     grid-template-columns: 1fr;
