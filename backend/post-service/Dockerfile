@@ -1,10 +1,13 @@
 # Build Stage
 FROM maven:3.9.9-eclipse-temurin-17 AS build
 WORKDIR /app
+ENV MAVEN_OPTS="-Xmx768m"
 COPY pom.xml .
-RUN mvn dependency:go-offline -B
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn dependency:go-offline -B
 COPY src ./src
-RUN mvn clean package -DskipTests
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn clean package -DskipTests -B
 
 # Run Stage — arm64/amd64
 FROM eclipse-temurin:17-jre-jammy

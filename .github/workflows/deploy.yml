@@ -134,7 +134,8 @@ jobs:
           PLAN=$(bash scripts/determine-docker-services-ci.sh "$BEFORE" "$AFTER")
           echo "::notice:: Docker CI plan: ${PLAN} (FULL_BUILD=${FULL_BUILD})"
           if [ "$FULL_BUILD" = "true" ] || [ "$PLAN" = "ALL" ]; then
-            docker compose --env-file .env.build build --parallel
+            # 동시에 8개+ Maven 빌드 시 러너 OOM·Maven exit 1(api-gateway 등 무관 서비스 실패) 방지
+            docker compose --env-file .env.build build --parallel 2
             docker compose --env-file .env.build push
           elif [ "$PLAN" = "RETAG" ]; then
             bash scripts/ci-retag-unchanged-images.sh .env.build "$BEFORE" "$AFTER"
