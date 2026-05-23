@@ -90,9 +90,14 @@ export default function Sidebar({ isSidebarOpen, closeSidebar }) {
               <div className="sidebar-nav-list">
                 <p>Hello, <strong>{nickname}</strong>!</p>
                 {isAdmin && (
-                  <Link href="/post/new" onClick={closeSidebar} className="btn-primary-small" style={{ textAlign: "center", marginTop: "10px", display: "block" }}>
-                    ✏️ New post
-                  </Link>
+                  <>
+                    <Link href="/post/new" onClick={closeSidebar} className="btn-primary-small" style={{ textAlign: "center", marginTop: "10px", display: "block" }}>
+                      ✏️ New post
+                    </Link>
+                    <Link href="/about/edit" onClick={closeSidebar} className="btn-secondary-small" style={{ textAlign: "center", marginTop: "8px", display: "block" }}>
+                      Edit About
+                    </Link>
+                  </>
                 )}
               </div>
             ) : (
@@ -110,6 +115,7 @@ export default function Sidebar({ isSidebarOpen, closeSidebar }) {
             {isAuthenticated && (
               <Link href="/post/drafts" onClick={closeSidebar} className="cursive-item">Draft</Link>
             )}
+            <Link href="/about" onClick={closeSidebar} className="cursive-item">About me</Link>
             <Link href="/structure" onClick={closeSidebar} className="cursive-item">System Structure</Link>
           </div>
 

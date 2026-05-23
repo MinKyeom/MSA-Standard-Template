@@ -52,7 +52,7 @@ public class SecurityConfig {
                         .requestMatchers("/user/check-username", "/user/check-nickname").permitAll()
                         .requestMatchers(HttpMethod.POST,"/user/api/users/nicknames").permitAll()
                         // 내 정보 조회 및 닉네임 목록 조회 허용
-                        .requestMatchers(HttpMethod.GET, "/user/me", "/user/nicknames").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/user/me", "/user/nicknames", "/user/about").permitAll()
                         .requestMatchers("/user/send-code", "/user/verify-code","/user/send-verification").permitAll() // ⭐ 이 줄을 추가하세요!
                         // 내부 서비스 호출 경로 허용 (PostService 등에서 사용)
                         .requestMatchers("/user/api/**").permitAll() // 혹은 이 패턴으로 전체 허용

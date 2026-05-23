@@ -1,0 +1,43 @@
+.about-page-container {
+  max-width: min(800px, 100%);
+  margin: 0 auto;
+  padding: clamp(24px, 5vw, 48px) clamp(16px, 4vw, 24px);
+  box-sizing: border-box;
+}
+
+.about-page-article {
+  color: var(--color-text-main);
+}
+
+.about-page-header {
+  margin-bottom: clamp(24px, 4vw, 40px);
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.about-page-title {
+  font-size: clamp(1.75rem, 5vw, 2.75rem);
+  font-weight: 900;
+  line-height: 1.2;
+  margin: 0 0 12px;
+  color: var(--color-text-main);
+}
+
+.about-page-meta {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-sub);
+}
+
+.about-actions {
+  margin-top: 16px;
+}
+
+.about-page-body {
+  margin-top: 8px;
+}
+
+.about-page-empty {
+  color: var(--color-text-sub);
+  line-height: 1.7;
+}

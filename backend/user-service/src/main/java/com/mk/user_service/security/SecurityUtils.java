@@ -11,6 +11,15 @@ public class SecurityUtils {
         if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
             throw new RuntimeException("인증되지 않은 사용자입니다.");
         }
-        return authentication.getPrincipal().toString(); 
+        return authentication.getPrincipal().toString();
+    }
+
+    public static String getAuthenticatedUserRole() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || authentication.getAuthorities() == null || authentication.getAuthorities().isEmpty()) {
+            return null;
+        }
+        return authentication.getAuthorities().iterator().next().getAuthority();
     }
 }
