@@ -112,6 +112,7 @@ jobs:
           COMPOSE_PROFILES: edge
           DOCKER_BUILDKIT: "1"
           COMPOSE_DOCKER_CLI_BUILD: "1"
+          COMPOSE_PARALLEL_LIMIT: "2"
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           INPUT_BUILD_MODE: ${{ inputs.build_mode }}
         run: |
@@ -134,14 +135,14 @@ jobs:
           PLAN=$(bash scripts/determine-docker-services-ci.sh "$BEFORE" "$AFTER")
           echo "::notice:: Docker CI plan: ${PLAN} (FULL_BUILD=${FULL_BUILD})"
           if [ "$FULL_BUILD" = "true" ] || [ "$PLAN" = "ALL" ]; then
-            # 동시에 8개+ Maven 빌드 시 러너 OOM·Maven exit 1(api-gateway 등 무관 서비스 실패) 방지
-            docker compose --env-file .env.build build --parallel 2
+            # --parallel 은 compose 전역 플래그. build 뒤에 두면 "2"가 서비스명으로 해석됨(no such service: 2)
+            docker compose --parallel 2 --env-file .env.build build
             docker compose --env-file .env.build push
           elif [ "$PLAN" = "RETAG" ]; then
             bash scripts/ci-retag-unchanged-images.sh .env.build "$BEFORE" "$AFTER"
           else
             read -r -a TOBUILD <<< "$PLAN"
-            docker compose --env-file .env.build build "${TOBUILD[@]}"
+            docker compose --parallel 2 --env-file .env.build build "${TOBUILD[@]}"
             docker compose --env-file .env.build push "${TOBUILD[@]}"
             bash scripts/ci-retag-unchanged-images.sh .env.build "$BEFORE" "$AFTER" "${TOBUILD[@]}"
           fi
