@@ -31,16 +31,16 @@ if [ -n "$SITE" ]; then
         case "$hp" in
           www.*)
             ap="${hp#www.}"
-            echo "PRIMARY_SERVER_NAMES=${hp} ${ap}" >> "$f"
+            echo "PRIMARY_SERVER_NAMES=\"${hp} ${ap}\"" >> "$f"
             ;;
           *)
-            echo "PRIMARY_SERVER_NAMES=${hp} www.${hp}" >> "$f"
+            echo "PRIMARY_SERVER_NAMES=\"${hp} www.${hp}\"" >> "$f"
             ;;
         esac
       fi
     fi
     if ! grep -q '^SSL_CERT_PATH=' "$f"; then
-      first=$(grep '^PRIMARY_SERVER_NAMES=' "$f" | head -1 | cut -d= -f2- | awk '{print $1}')
+      first=$(grep '^PRIMARY_SERVER_NAMES=' "$f" | head -1 | cut -d= -f2- | tr -d '"' | tr -d "'" | tr -d '\r' | awk '{print $1}')
       if [ -n "$first" ]; then
         echo "SSL_CERT_PATH=/etc/letsencrypt/live/${first}/fullchain.pem" >> "$f"
         echo "SSL_KEY_PATH=/etc/letsencrypt/live/${first}/privkey.pem" >> "$f"

@@ -215,11 +215,8 @@ jobs:
             bash scripts/install-logrotate-rules.sh
             export DOCKER_IMAGE_PREFIX="${{ needs.build-and-push.outputs.image_prefix }}"
             export IMAGE_TAG="${{ github.sha }}"
-            set -a
-            # shellcheck disable=SC1091
-            source "${TARGET}/.env"
-            set +a
-            export COMPOSE_PROFILES="${COMPOSE_PROFILES:-edge}"
+            # .env 는 docker compose 가 자동 로드(env_file). bash source 금지 — PRIMARY_SERVER_NAMES 등 공백 값이 명령으로 해석됨.
+            export COMPOSE_PROFILES=edge
             # msa-nginx 가 80/443 바인딩 — 호스트 패키지 nginx 등이 점유 중이면 "address already in use" 로 실패
             bash scripts/free-host-ports-for-msa-nginx.sh
             # --pull always 로 레지스트리 최신 이미지 확보 + 강제 재생성(별도 pull 생략으로 이중 다운로드 방지)
