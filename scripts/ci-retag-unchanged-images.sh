@@ -55,7 +55,7 @@ for svc in "${ALL_SVCS[@]}"; do
     docker push "$dst"
   else
     echo "::warning:: $src 없음 → $svc compose 빌드"
-    docker compose --env-file "$ENV_FILE" build "$svc"
+    bash scripts/ci-compose-build.sh "$ENV_FILE" "$svc"
     docker compose --env-file "$ENV_FILE" push "$svc"
   fi
 done
