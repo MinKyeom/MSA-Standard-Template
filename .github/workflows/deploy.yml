@@ -75,6 +75,9 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
+        with:
+          # container 드라이버 + compose push 조합에서 unknown blob 발생 → 로컬 docker 이미지로 빌드
+          driver: docker
 
       - name: Log in to GHCR
         uses: docker/login-action@v4
@@ -135,13 +138,11 @@ jobs:
           echo "::notice:: Docker CI plan: ${PLAN} (FULL_BUILD=${FULL_BUILD})"
           if [ "$FULL_BUILD" = "true" ] || [ "$PLAN" = "ALL" ]; then
             bash scripts/ci-compose-build.sh .env.build
-            docker compose --env-file .env.build push
           elif [ "$PLAN" = "RETAG" ]; then
             bash scripts/ci-retag-unchanged-images.sh .env.build "$BEFORE" "$AFTER"
           else
             read -r -a TOBUILD <<< "$PLAN"
             bash scripts/ci-compose-build.sh .env.build "${TOBUILD[@]}"
-            docker compose --env-file .env.build push "${TOBUILD[@]}"
             bash scripts/ci-retag-unchanged-images.sh .env.build "$BEFORE" "$AFTER" "${TOBUILD[@]}"
           fi
           bash scripts/post-deploy-docker-prune.sh

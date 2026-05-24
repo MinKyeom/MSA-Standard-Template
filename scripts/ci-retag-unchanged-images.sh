@@ -52,10 +52,9 @@ for svc in "${ALL_SVCS[@]}"; do
   dst="${PREFIX}/${suf}:${AFTER_SHA}"
   if docker pull "$src" 2>/dev/null; then
     docker tag "$src" "$dst"
-    docker push "$dst"
+    bash scripts/ci-docker-push-retry.sh "$dst"
   else
-    echo "::warning:: $src 없음 → $svc compose 빌드"
+    echo "::warning:: $src 없음 → $svc compose 빌드+푸시"
     bash scripts/ci-compose-build.sh "$ENV_FILE" "$svc"
-    docker compose --env-file "$ENV_FILE" push "$svc"
   fi
 done

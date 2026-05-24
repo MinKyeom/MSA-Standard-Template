@@ -14,5 +14,8 @@ set -euo pipefail
 echo "[prune] docker image prune -af (미사용 이미지)"
 docker image prune -af
 
-echo "[prune] docker builder prune -f (BuildKit 캐시)"
-docker builder prune -f 2>/dev/null || true
+# CI 러너: builder prune 은 직후 push/retag 와 경합해 unknown blob 을 유발할 수 있어 CI 에서는 생략
+if [ "${CI:-}" != "true" ] && [ "${GITHUB_ACTIONS:-}" != "true" ]; then
+  echo "[prune] docker builder prune -f (BuildKit 캐시)"
+  docker builder prune -f 2>/dev/null || true
+fi
