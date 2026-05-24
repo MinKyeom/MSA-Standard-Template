@@ -92,9 +92,7 @@ jobs:
             exit 1
           fi
           printf '%s\n' "$ENV_VARS" > .env.build
-          echo "DOCKER_IMAGE_PREFIX=${{ steps.meta.outputs.prefix }}" >> .env.build
-          echo "IMAGE_TAG=${{ github.sha }}" >> .env.build
-          grep -q '^COMPOSE_PROFILES=' .env.build || echo "COMPOSE_PROFILES=edge" >> .env.build
+          bash scripts/ci-finalize-env-file.sh .env.build "${{ steps.meta.outputs.prefix }}" "${{ github.sha }}"
           # compose.yml 의 env_file: .env 때문에 push 시 루트 .env 가 필요함(러너에는 없음 → 동일 내용 복사)
           cp .env.build .env
 
@@ -175,9 +173,7 @@ jobs:
           CHAT: ${{ vars.PUBLIC_CHATBOT_URL }}
         run: |
           printf '%s\n' "$ENV_VARS" > .env.deploy.tmp
-          echo "DOCKER_IMAGE_PREFIX=${{ needs.build-and-push.outputs.image_prefix }}" >> .env.deploy.tmp
-          echo "IMAGE_TAG=${{ github.sha }}" >> .env.deploy.tmp
-          grep -q '^COMPOSE_PROFILES=' .env.deploy.tmp || echo "COMPOSE_PROFILES=edge" >> .env.deploy.tmp
+          bash scripts/ci-finalize-env-file.sh .env.deploy.tmp "${{ needs.build-and-push.outputs.image_prefix }}" "${{ github.sha }}"
           bash scripts/merge-ci-env-overrides.sh .env.deploy.tmp
 
       - name: .env 서버로 복사
@@ -219,9 +215,14 @@ jobs:
             bash scripts/install-logrotate-rules.sh
             export DOCKER_IMAGE_PREFIX="${{ needs.build-and-push.outputs.image_prefix }}"
             export IMAGE_TAG="${{ github.sha }}"
+            set -a
+            # shellcheck disable=SC1091
+            source "${TARGET}/.env"
+            set +a
+            export COMPOSE_PROFILES="${COMPOSE_PROFILES:-edge}"
             # msa-nginx 가 80/443 바인딩 — 호스트 패키지 nginx 등이 점유 중이면 "address already in use" 로 실패
             bash scripts/free-host-ports-for-msa-nginx.sh
             # --pull always 로 레지스트리 최신 이미지 확보 + 강제 재생성(별도 pull 생략으로 이중 다운로드 방지)
-            # COMPOSE_PROFILES=edge 만 활성 — fluent-bit(monitoring)은 scripts/start-fluent-bit.sh 로 별도 기동
-            docker compose up -d --pull always --force-recreate --remove-orphans
+            # reverse-proxy는 profiles: [edge] — --profile edge 로 80/443 nginx 기동 보장
+            docker compose --profile edge up -d --pull always --force-recreate --remove-orphans
             bash scripts/post-deploy-docker-prune.sh

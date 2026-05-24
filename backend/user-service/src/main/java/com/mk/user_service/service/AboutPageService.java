@@ -18,9 +18,13 @@ public class AboutPageService {
 
     @Transactional(readOnly = true)
     public AboutPageResponse getAboutPage() {
-        AboutPage page = aboutPageRepository.findById(AboutPage.SINGLETON_ID)
-                .orElseGet(this::createDefaultPage);
-        return AboutPageResponse.fromEntity(page);
+        return aboutPageRepository.findById(AboutPage.SINGLETON_ID)
+                .map(AboutPageResponse::fromEntity)
+                .orElseGet(() -> AboutPageResponse.builder()
+                        .title("About me")
+                        .content("")
+                        .updatedAt(null)
+                        .build());
     }
 
     @Transactional

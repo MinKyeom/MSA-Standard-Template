@@ -16,7 +16,7 @@ FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends netcat-openbsd \
+    && apt-get install -y --no-install-recommends wget netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
 # 빌드 단계에서 생성된 JAR 파일 복사

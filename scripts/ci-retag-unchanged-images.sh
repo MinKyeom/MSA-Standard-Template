@@ -14,7 +14,7 @@ BUILT=( "$@" )
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-PREFIX=$(grep '^DOCKER_IMAGE_PREFIX=' "$ENV_FILE" | cut -d= -f2- | tr -d '\r' | tr -d '"' | tr -d "'")
+PREFIX=$(grep '^DOCKER_IMAGE_PREFIX=' "$ENV_FILE" | tail -1 | cut -d= -f2- | tr -d '\r' | tr -d '"' | tr -d "'")
 
 suffix_for() {
   case "$1" in

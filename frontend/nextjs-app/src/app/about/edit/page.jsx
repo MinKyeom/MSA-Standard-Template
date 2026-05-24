@@ -6,22 +6,8 @@ import Link from "next/link";
 import { fetchAboutClient, updateAbout } from "../../../services/api/about";
 import { useAuth } from "../../../providers/AuthProvider";
 import { useToast } from "../../../hooks/useToast";
-import { marked } from "marked";
-import DOMPurify from "dompurify";
+import MarkdownRenderer from "../../../components/MarkdownRenderer";
 import "../../../styles/globals.css";
-
-marked.setOptions({
-  breaks: true,
-});
-
-const renderMarkdown = (markdown) => {
-  if (!markdown) return "";
-  const rawMarkup = marked.parse(markdown);
-  if (typeof window !== "undefined") {
-    return DOMPurify.sanitize(rawMarkup);
-  }
-  return rawMarkup;
-};
 
 export default function AboutEditPage() {
   const router = useRouter();
@@ -124,10 +110,9 @@ export default function AboutEditPage() {
             className="write-page-textarea"
           />
 
-          <div
-            className="markdown-body preview-area write-page-preview"
-            dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
-          />
+          <div className="preview-area write-page-preview">
+            <MarkdownRenderer content={content} />
+          </div>
         </div>
 
         <div

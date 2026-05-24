@@ -5,6 +5,8 @@ import { getSiteUrl } from "../../config/site";
 import "../../styles/globals.css";
 import "../../styles/AboutPage.css";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "About me",
   description:
@@ -22,7 +24,7 @@ const formatDate = (dateString) => {
 
 async function getAbout() {
   try {
-    return await fetchAbout();
+    return await fetchAbout({ cache: "no-store" });
   } catch (error) {
     console.error("About page fetch failed:", error);
     return null;

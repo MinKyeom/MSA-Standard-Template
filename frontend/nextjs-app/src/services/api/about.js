@@ -51,6 +51,10 @@ aboutAxios.interceptors.response.use(
       flushPending(null);
       return aboutAxios(originalRequest);
     } catch (refreshError) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("currentUserId");
+        localStorage.removeItem("currentUserNickname");
+      }
       flushPending(refreshError);
       return Promise.reject(refreshError);
     } finally {
