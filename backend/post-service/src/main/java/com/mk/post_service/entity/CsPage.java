@@ -1,12 +1,15 @@
 package com.mk.post_service.entity;
 
 
+import org.hibernate.annotations.Columns;
+
 import jakarta.persistence.*;
 import lombok.*;
 
 
 @Entity
 @Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,10 +20,20 @@ public class CsPage {
   // AboutPage와 다른 DB라 동일하게 작성해도 문제 없음
   public static final String SINGLETON_ID = "main";
 
-  @Column(name= "author_id", nullable = false, length=50)
-  private String authorId;
+  @Id
+  @Column(length = 32)
+  private String id;
 
-  @Column(name="view_count", nullable =false)
-  private Long viewCount = 0L;
+  @Column(nullable = false, length =200)
+  private String title
+
+  // Markdown text 필드
+  @Column(nullable = false, columnDefinition = "TEXT")
+  private String content;
+
+  @Column(nullable = false)
+  private LocalDateTime updatedAt;
+
+
 
 }
