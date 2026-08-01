@@ -50,6 +50,8 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
             // [B] 조회(GET) 관련 API 전체 허용
             // /api/posts/** 를 통해 하위의 모든 GET 요청(상세, 카테고리, 태그 등)을 한 번에 처리
             .requestMatchers(HttpMethod.GET, "/api/posts", "/api/posts/**").permitAll()
+            // CS 요약 페이지(콘텐츠 도메인) 공개 조회
+            .requestMatchers(HttpMethod.GET, "/api/cs").permitAll()
             
             // [C] 그 외 모든 요청(POST, PUT, DELETE)은 인증 필수
             .anyRequest().authenticated()

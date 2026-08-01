@@ -129,6 +129,8 @@ export default function RootLayout({ children }) {
                 &copy; 2026 MinKowskiM. All rights reserved.{" "}
                 <a href="/about" className="main-footer__link">About</a>
                 {" · "}
+                <a href="/cs" className="main-footer__link">CS Notes</a>
+                {" · "}
                 <a href="/privacy" className="main-footer__link">Privacy policy</a>
               </p>
             </footer>

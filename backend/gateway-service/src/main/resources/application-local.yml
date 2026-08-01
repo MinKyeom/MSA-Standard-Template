@@ -15,7 +15,7 @@ spring:
         - id: post-service-local
           uri: http://localhost:8082
           predicates:
-            - Path=/api/posts,/api/posts/**,/api/post-drafts,/api/post-drafts/**
+            - Path=/api/posts,/api/posts/**,/api/post-drafts,/api/post-drafts/**,/api/cs,/api/cs/**
           filters: [PreserveHostHeader]
         - id: search-service-local
           uri: http://localhost:8010

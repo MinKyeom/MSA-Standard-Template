@@ -97,6 +97,9 @@ export default function Sidebar({ isSidebarOpen, closeSidebar }) {
                     <Link href="/about/edit" onClick={closeSidebar} className="btn-secondary-small" style={{ textAlign: "center", marginTop: "8px", display: "block" }}>
                       Edit About
                     </Link>
+                    <Link href="/cs/edit" onClick={closeSidebar} className="btn-secondary-small" style={{ textAlign: "center", marginTop: "8px", display: "block" }}>
+                      Edit CS Notes
+                    </Link>
                   </>
                 )}
               </div>
@@ -116,6 +119,7 @@ export default function Sidebar({ isSidebarOpen, closeSidebar }) {
               <Link href="/post/drafts" onClick={closeSidebar} className="cursive-item">Draft</Link>
             )}
             <Link href="/about" onClick={closeSidebar} className="cursive-item">About me</Link>
+            <Link href="/cs" onClick={closeSidebar} className="cursive-item">CS Notes</Link>
             <Link href="/structure" onClick={closeSidebar} className="cursive-item">System Structure</Link>
           </div>
 

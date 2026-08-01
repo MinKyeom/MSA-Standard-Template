@@ -42,6 +42,7 @@ public class JwtValidationGlobalFilter implements GlobalFilter, Ordered {
         Pattern.compile("^/user/check-username.*"),
         Pattern.compile("^/user/check-nickname.*"),
         Pattern.compile("^/user/about$"),
+        Pattern.compile("^/api/cs$"),
         Pattern.compile("^/api/posts$"),           // GET 목록
         Pattern.compile("^/api/posts/\\d+$"),       // GET 상세
         Pattern.compile("^/api/posts/popular.*"),

@@ -18,7 +18,7 @@ spring:
         - id: post-service
           uri: http://post-service:8082
           predicates:
-            - Path=/api/posts,/api/posts/**,/api/post-drafts,/api/post-drafts/**
+            - Path=/api/posts,/api/posts/**,/api/post-drafts,/api/post-drafts/**,/api/cs,/api/cs/**
           filters: [PreserveHostHeader]
         - id: fastapi-ai
           uri: http://fastapi-ai:8000
