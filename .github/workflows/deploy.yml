@@ -11,6 +11,10 @@
 #   USERNAME   — SSH 사용자
 #   KEY        — SSH 개인 키(PEM 전체)
 #   DEPLOY_PATH — (선택) 배포 디렉터리 절대 경로. 비우면 /home/<USERNAME>/<저장소이름>
+#   GHCR_PULL_TOKEN — (선택) ghcr.io pull 용 PAT(read:packages). 없으면 deploy job 의 GITHUB_TOKEN 사용.
+#
+# 배포 서버는 이미지를 빌드하지 않습니다. GHCR login → pull → up --no-build 만 수행합니다.
+#   (과거: pull denied 시 서버에서 Maven 빌드 → context deadline exceeded 반복 실패)
 #
 # Variables (같은 메뉴 → Variables) — 권장: PUBLIC_SITE_URL, PUBLIC_API_URL(https 오리진), (선택) PUBLIC_CHATBOT_URL
 #   PUBLIC_API_URL 이 https 이면 OAUTH2_REDIRECT_BASE·CORS_ALLOWED_ORIGINS 가 비었거나 localhost 면 자동 보정됩니다(scripts/merge-ci-env-overrides.sh).
@@ -151,6 +155,10 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     timeout-minutes: 300
+    # 서버에서 ghcr.io private 패키지 pull 시 GITHUB_TOKEN 전달용
+    permissions:
+      contents: read
+      packages: read
     steps:
       - uses: actions/checkout@v5
 
@@ -190,11 +198,15 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         env:
           REMOTE_DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          # private GHCR pull — Actions GITHUB_TOKEN(packages:read). 장기 토큰이 필요하면 Secret GHCR_PULL_TOKEN 사용.
+          GHCR_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+          GHCR_TOKEN_FALLBACK: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.repository_owner }}
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
-          envs: REMOTE_DEPLOY_PATH
+          envs: REMOTE_DEPLOY_PATH,GHCR_TOKEN,GHCR_TOKEN_FALLBACK,GHCR_USER
           # 대용량 pull·재기동 대비 (job timeout 300m 와 별개)
           command_timeout: 300m
           script_stop: true
@@ -218,9 +230,10 @@ jobs:
             export IMAGE_TAG="${{ github.sha }}"
             # .env 는 docker compose 가 자동 로드(env_file). bash source 금지 — PRIMARY_SERVER_NAMES 등 공백 값이 명령으로 해석됨.
             export COMPOSE_PROFILES=edge
+            export GHCR_USER
+            export GHCR_TOKEN="${GHCR_TOKEN:-${GHCR_TOKEN_FALLBACK:?GHCR token missing}}"
             # msa-nginx 가 80/443 바인딩 — 호스트 패키지 nginx 등이 점유 중이면 "address already in use" 로 실패
             bash scripts/free-host-ports-for-msa-nginx.sh
-            # --pull always 로 레지스트리 최신 이미지 확보 + 강제 재생성(별도 pull 생략으로 이중 다운로드 방지)
-            # reverse-proxy는 profiles: [edge] — --profile edge 로 80/443 nginx 기동 보장
-            docker compose --profile edge up -d --pull always --force-recreate --remove-orphans
+            # GHCR login → pull → up --no-build (서버 Maven/npm 빌드 절대 금지)
+            bash scripts/deploy-compose-up.sh
             bash scripts/post-deploy-docker-prune.sh
