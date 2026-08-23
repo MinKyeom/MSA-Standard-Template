@@ -109,7 +109,8 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "1234")  # 기본값 1234
 
 try:
-    _groq_model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    # _groq_model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    _groq_model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
     llm = (
         ChatGroq(model=_groq_model, groq_api_key=GROQ_API_KEY, temperature=0.2)
         if GROQ_API_KEY
