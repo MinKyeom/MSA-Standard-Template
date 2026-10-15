@@ -95,6 +95,9 @@ nginx/*.crt
 nginx/*.key
 !nginx/.env.nginx.example
 
+# ----- 로컬 전용 메모(앱 스토어·개인 앱 정책 등, 저장소에 올리지 않음) -----
+docs/local/
+
 # ----- 기타 -----
 *.orig
 *.bak
